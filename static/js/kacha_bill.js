@@ -1,4 +1,4 @@
-// kacha_bill.js - Update the entire file
+// static/js/kacha_bill.js
 document.addEventListener('DOMContentLoaded', function() {
     
     // --- GLOBAL VARIABLES ---
@@ -15,31 +15,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const draftId = urlParams.get('draft');
     
     if (draftId) {
-        // We're editing a draft - load it and store the ID
         currentDraftId = draftId;
         loadDraftData(draftId);
     } else {
-        // New bill - add initial product row
         addProductRow();
     }
     
     // --- EVENT LISTENERS ---
-    document.getElementById('addProduct').addEventListener('click', addProductRow);
-    document.getElementById('resetBill').addEventListener('click', resetBill);
-    document.getElementById('saveDraft').addEventListener('click', saveDraft);
-    document.getElementById('generateBill').addEventListener('click', generateBill);
+    const addProductBtn = document.getElementById('addProduct');
+    const resetBillBtn = document.getElementById('resetBill');
+    const saveDraftBtn = document.getElementById('saveDraft');
+    const generateBillBtn = document.getElementById('generateBill');
+
+    if (addProductBtn) addProductBtn.addEventListener('click', addProductRow);
+    if (resetBillBtn) resetBillBtn.addEventListener('click', resetBill);
+    if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
+    if (generateBillBtn) generateBillBtn.addEventListener('click', generateBill);
     
-    // --- DRAFT LOADING FUNCTION ---
+    // --- FUNCTIONS ---
     async function loadDraftData(draftId) {
         try {
             showAppAlert('Loading draft...', 'info');
-            
             const response = await fetch(`/api/get-draft/${draftId}/`);
             const result = await response.json();
             
             if (response.ok && result.status === 'success') {
-                const draft = result.draft;
-                populateFormWithDraft(draft);
+                populateFormWithDraft(result.draft);
                 showAppAlert('Draft loaded successfully!', 'success');
             } else {
                 throw new Error(result.message || 'Failed to load draft');
@@ -47,110 +48,75 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error loading draft:', error);
             showAppAlert(`Error loading draft: ${error.message}`, 'error');
-            // Fall back to empty form
             addProductRow();
         }
     }
     
-    
     function populateFormWithDraft(draft) {
-        // Fill basic form fields
-        if (draft.firmName) {
-            document.getElementById('firmName').value = draft.firmName;
-        }
-        if (draft.billDate) {
-            document.getElementById('billDate').value = draft.billDate;
-        }
-        if (draft.customerName) {
-            document.getElementById('customerName').value = draft.customerName;
-        }
-        if (draft.notes) {
-            document.getElementById('notes').value = draft.notes;
-        }
+        if (draft.firmName) document.getElementById('firmName').value = draft.firmName;
+        if (draft.billDate) document.getElementById('billDate').value = draft.billDate;
+        if (draft.customerName) document.getElementById('customerName').value = draft.customerName;
+        if (draft.notes) document.getElementById('notes').value = draft.notes;
         
-        // Clear existing products and add draft products
+        // Note: We intentionally DO NOT populate Bill Number here as it is not an input field
+        
         const productsBody = document.getElementById('productsBody');
-        if (productsBody) {
-            productsBody.innerHTML = '';
-        }
+        if (productsBody) productsBody.innerHTML = '';
         
-        // Add products from draft
         if (draft.products && draft.products.length > 0) {
-            draft.products.forEach((product, index) => {
+            draft.products.forEach(product => {
                 addProductRow();
-                
-                // Get the newly added row
                 const rows = document.querySelectorAll('.product-row');
                 const newRow = rows[rows.length - 1];
                 
-                // Fill product data
-                const productNameInput = newRow.querySelector('.product-name');
-                const quantityInput = newRow.querySelector('.quantity');
-                const rateInput = newRow.querySelector('.rate');
-                
-                if (productNameInput && product.name) {
-                    productNameInput.value = product.name;
+                if (newRow) {
+                    newRow.querySelector('.product-name').value = product.name || '';
+                    newRow.querySelector('.quantity').value = product.quantity || 1;
+                    newRow.querySelector('.rate').value = product.rate || 0;
+                    calculateRowAmount({ target: newRow.querySelector('.quantity') });
                 }
-                if (quantityInput && product.quantity) {
-                    quantityInput.value = product.quantity;
-                }
-                if (rateInput && product.rate) {
-                    rateInput.value = product.rate;
-                }
-                
-                // Calculate amount for this row
-                calculateRowAmount({ target: quantityInput });
             });
         } else {
-            // No products in draft - add one empty row
             addProductRow();
         }
         
-        // Update serial numbers
         updateSerialNumbers();
-        
-        // Update page title to indicate we're editing
-        const pageTitle = document.querySelector('.page-title');
-        if (pageTitle) {
-            pageTitle.textContent = 'Kacha Bill Generator (Editing Draft)';
-        }
-        
-        // Update button text to show we're updating
-        const saveDraftBtn = document.getElementById('saveDraft');
-        if (saveDraftBtn) {
-            saveDraftBtn.textContent = 'Update Draft';
-        }
+        updateUIForEditMode();
     }
 
-    // --- CORE FUNCTIONS ---
+    function updateUIForEditMode() {
+        const pageTitle = document.querySelector('.page-title');
+        if (pageTitle) pageTitle.textContent = 'Kacha Bill Generator (Editing Draft)';
+        
+        const saveDraftBtn = document.getElementById('saveDraft');
+        if (saveDraftBtn) saveDraftBtn.textContent = 'Update Draft';
+    }
+
     function addProductRow() {
         const template = document.getElementById('productRowTemplate');
-        if (!template) return;
-        
-        const clone = template.content.cloneNode(true);
         const productsBody = document.getElementById('productsBody');
-        if (!productsBody) return;
+        if (!template || !productsBody) return;
 
+        const clone = template.content.cloneNode(true);
         productsBody.appendChild(clone);
-        updateSerialNumbers();
         
         const newRow = productsBody.lastElementChild;
+        setupRowListeners(newRow);
+        updateSerialNumbers();
+    }
+    
+    function setupRowListeners(row) {
+        const quantityInput = row.querySelector('.quantity');
+        const rateInput = row.querySelector('.rate');
+        const deleteBtn = row.querySelector('.delete-product');
         
-        // Add event listeners to the new row
-        const quantityInput = newRow.querySelector('.quantity');
-        const rateInput = newRow.querySelector('.rate');
-        const deleteBtn = newRow.querySelector('.delete-product');
+        if (quantityInput) quantityInput.addEventListener('input', calculateRowAmount);
+        if (rateInput) rateInput.addEventListener('input', calculateRowAmount);
         
-        if (quantityInput) {
-            quantityInput.addEventListener('input', calculateRowAmount);
-        }
-        if (rateInput) {
-            rateInput.addEventListener('input', calculateRowAmount);
-        }
         if (deleteBtn) {
             deleteBtn.addEventListener('click', function() {
                 if (document.querySelectorAll('.product-row').length > 1) {
-                    newRow.remove();
+                    row.remove();
                     updateSerialNumbers();
                     calculateTotal();
                 } else {
@@ -159,19 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Calculate initial amount for the new row
-        if (quantityInput) {
-            calculateRowAmount({ target: quantityInput });
-        }
+        // Initial calc
+        if (quantityInput) calculateRowAmount({ target: quantityInput });
     }
     
     function updateSerialNumbers() {
-        const rows = document.querySelectorAll('.product-row');
-        rows.forEach((row, index) => {
-            const serialNumber = row.querySelector('.serial-number');
-            if (serialNumber) {
-                serialNumber.textContent = index + 1;
-            }
+        document.querySelectorAll('.product-row').forEach((row, index) => {
+            const sn = row.querySelector('.serial-number');
+            if (sn) sn.textContent = index + 1;
         });
     }
     
@@ -179,28 +140,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = event.target.closest('.product-row');
         if (!row) return;
         
-        const quantityInput = row.querySelector('.quantity');
-        const rateInput = row.querySelector('.rate');
-        const amountCell = row.querySelector('.amount');
+        const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+        const rate = parseFloat(row.querySelector('.rate').value) || 0;
+        const amount = qty * rate;
         
-        if (!quantityInput || !rateInput || !amountCell) return;
-        
-        const quantity = parseFloat(quantityInput.value) || 0;
-        const rate = parseFloat(rateInput.value) || 0;
-        amountCell.textContent = `₹${(quantity * rate).toFixed(2)}`;
+        row.querySelector('.amount').textContent = `₹${amount.toFixed(2)}`;
         calculateTotal();
     }
     
     function calculateTotal() {
         let total = 0;
         document.querySelectorAll('.amount').forEach(cell => {
-            const amountText = cell.textContent.replace('₹', '');
-            total += parseFloat(amountText) || 0;
+            total += parseFloat(cell.textContent.replace('₹', '')) || 0;
         });
-        const totalAmountEl = document.getElementById('totalAmount');
-        if (totalAmountEl) {
-            totalAmountEl.textContent = `₹${total.toFixed(2)}`;
-        }
+        const totalEl = document.getElementById('totalAmount');
+        if (totalEl) totalEl.textContent = `₹${total.toFixed(2)}`;
     }
     
     function resetBill() {
@@ -208,40 +162,25 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('firmName').value = '';
             document.getElementById('customerName').value = '';
             document.getElementById('notes').value = '';
-            
-            const productsBody = document.getElementById('productsBody');
-            if (productsBody) {
-                productsBody.innerHTML = '';
-            }
-            
-            // Reset draft tracking
+            document.getElementById('productsBody').innerHTML = '';
             currentDraftId = null;
             
-            // Reset UI
             const pageTitle = document.querySelector('.page-title');
-            if (pageTitle) {
-                pageTitle.textContent = 'Kacha Bill Generator';
-            }
-            
-            const saveDraftBtn = document.getElementById('saveDraft');
-            if (saveDraftBtn) {
-                saveDraftBtn.textContent = 'Save Draft';
-            }
+            if (pageTitle) pageTitle.textContent = 'Kacha Bill Generator';
+            const saveBtn = document.getElementById('saveDraft');
+            if (saveBtn) saveBtn.textContent = 'Save Draft';
             
             addProductRow();
             calculateTotal();
         }
     }
     
-    // --- DATA SAVING FUNCTIONS ---
+    // --- DATA HANDLING ---
 
     function saveDraft() {
         const billData = collectBillData();
         if (validateBill(billData)) {
-            // Include draftId if we're editing an existing draft
-            if (currentDraftId) {
-                billData.draftId = currentDraftId;
-            }
+            if (currentDraftId) billData.draftId = currentDraftId;
             billData.status = 'draft';
             sendDataToServer(billData);
         }
@@ -250,99 +189,31 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateBill() {
         const billData = collectBillData();
         if (validateBill(billData)) {
-            // When generating a bill from a draft, we don't include draftId
-            // This will create a new kacha bill and leave the draft as is
+            // Do NOT send draftId here; we want a fresh Kacha bill
             billData.status = 'kacha';
             sendDataToServer(billData);
         }
     }
 
-    async function sendDataToServer(billData) {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-        
-        if (!csrfToken) {
-            showAppAlert('CSRF token not found. Please refresh the page.', 'error');
-            return;
-        }
-        
-        try {
-            console.log('Sending data:', billData);
-            
-            const response = await fetch('/api/save/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify(billData)
-            });
-            
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const result = await response.json();
-                
-                if (response.ok) {
-                    let successMessage = result.message;
-                    
-                    if (result.updated) {
-                        // Draft was updated
-                        showAppAlert(successMessage, 'success');
-                    } else {
-                        // New document was created
-                        if (billData.status === 'draft') {
-                            // Store the new draft ID for future updates
-                            currentDraftId = result.bill_id;
-                            // Update UI to show we're now editing
-                            const pageTitle = document.querySelector('.page-title');
-                            if (pageTitle) {
-                                pageTitle.textContent = 'Kacha Bill Generator (Editing Draft)';
-                            }
-                            const saveDraftBtn = document.getElementById('saveDraft');
-                            if (saveDraftBtn) {
-                                saveDraftBtn.textContent = 'Update Draft';
-                            }
-                        }
-                        showAppAlert(successMessage, 'success');
-                    }
-                } else {
-                    throw new Error(result.message || `Server error: ${response.status}`);
-                }
-            } else {
-                // Handle non-JSON response (HTML error page)
-                const text = await response.text();
-                console.error('HTML response received:', text.substring(0, 500));
-                throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
-            }
-        } catch (error) {
-            console.error('Error saving bill:', error);
-            showAppAlert(`Error: ${error.message}`, 'error');
-        }
-    }
-    
     function collectBillData() {
         const products = [];
         document.querySelectorAll('.product-row').forEach(row => {
-            const productNameInput = row.querySelector('.product-name');
-            const quantityInput = row.querySelector('.quantity');
-            const rateInput = row.querySelector('.rate');
+            const name = row.querySelector('.product-name').value;
+            const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+            const rate = parseFloat(row.querySelector('.rate').value) || 0;
             
-            if (productNameInput && quantityInput && rateInput) {
-                const productName = productNameInput.value;
-                const quantity = parseFloat(quantityInput.value) || 0;
-                const rate = parseFloat(rateInput.value) || 0;
-                
-                if (productName || quantity > 0 || rate > 0) {
-                    products.push({
-                        name: productName,
-                        quantity: quantity,
-                        rate: rate,
-                        amount: quantity * rate
-                    });
-                }
+            if (name || qty > 0 || rate > 0) {
+                products.push({
+                    name: name,
+                    quantity: qty,
+                    rate: rate,
+                    amount: qty * rate
+                });
             }
         });
         
+        // IMPORTANT: We do NOT collect 'billNumber' here.
+        // The backend handles generation automatically.
         return {
             firmName: document.getElementById('firmName')?.value || '',
             billDate: document.getElementById('billDate')?.value || '',
@@ -354,33 +225,72 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function validateBill(billData) {
+        // Validation logic - strictly checks ONLY these fields
         if (!billData.firmName.trim()) {
             showAppAlert('Please enter firm name.', 'error');
-            document.getElementById('firmName').focus();
+            document.getElementById('firmName')?.focus();
             return false;
         }
+        
         if (billData.products.length === 0) {
             showAppAlert('Please add at least one product.', 'error');
             return false;
         }
+        
         for (let i = 0; i < billData.products.length; i++) {
             if (!billData.products[i].name.trim()) {
                 showAppAlert(`Please enter a name for product ${i + 1}.`, 'error');
-                const productRows = document.querySelectorAll('.product-row');
-                if (productRows[i]) {
-                    const productNameInput = productRows[i].querySelector('.product-name');
-                    if (productNameInput) {
-                        productNameInput.focus();
-                    }
-                }
                 return false;
             }
         }
+        
+
         return true;
     }
 
+    async function sendDataToServer(billData) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!csrfToken) {
+            showAppAlert('CSRF token missing. Please refresh.', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/save/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(billData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                showAppAlert(result.message, 'success');
+                
+                if (billData.status === 'draft') {
+                    // Update current context to this draft
+                    currentDraftId = result.bill_id;
+                    updateUIForEditMode();
+                } else if (billData.status === 'kacha') {
+                    // Redirect to list after success
+                    setTimeout(() => {
+                        window.location.href = '/kacha-bills/';
+                    }, 1000);
+                }
+            } else {
+                throw new Error(result.message || 'Server error');
+            }
+        } catch (error) {
+            console.error('Error saving:', error);
+            showAppAlert(error.message, 'error');
+        }
+    }
+
     function showAppAlert(message, type = 'success') {
-        console.log(`ALERT (${type}):`, message);
-        alert(message); 
+        // You can replace this with a nicer toast notification if you have one
+        alert(message);
     }
 });

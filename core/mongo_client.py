@@ -101,3 +101,11 @@ def close_client():
         client.close()
         client = None
         logger.info("MongoDB client closed.")
+
+
+def get_company_details_collection(db_name: str = "DigitalMemo", collection_name: str = "company_details"):
+    """
+    Get the 'company_details' collection handle for storing company information.
+    """
+    db = get_db(db_name)
+    return db[collection_name]

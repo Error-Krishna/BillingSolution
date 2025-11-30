@@ -254,6 +254,50 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    // Load company information for sidebar
+    async function loadCompanyInfo() {
+        try {
+            const response = await fetch('/api/get-company-details/');
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                const company = result.company;
+                
+                // Update sidebar with company name
+                const businessNameElements = document.querySelectorAll('.business-name');
+                businessNameElements.forEach(el => {
+                    el.textContent = company.companyName || 'Your Business';
+                });
+                
+                // Update business email if available
+                if (company.email) {
+                    const businessEmailElements = document.querySelectorAll('.business-email');
+                    businessEmailElements.forEach(el => {
+                        el.textContent = company.email;
+                    });
+                }
+
+                // Update the user avatar with company initials
+                const userAvatar = document.querySelector('.user-avatar');
+                if (userAvatar && company.companyName) {
+                    const initials = company.companyName
+                        .split(' ')
+                        .map(word => word.charAt(0))
+                        .join('')
+                        .toUpperCase()
+                        .substring(0, 2);
+                    userAvatar.textContent = initials;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading company info:', error);
+            // Don't show error for company info as it might not be set up yet
+        }
+    }
+
+    // Initialize company info
+    loadCompanyInfo();
+
     // Initialize any tooltips
     function initTooltips() {
         const elementsWithTitle = document.querySelectorAll('[title]');

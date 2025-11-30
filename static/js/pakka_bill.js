@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     addProductRow();
     
+    // Load company details to auto-fill seller information
+    loadCompanyDetails();
+    
     // --- EVENT LISTENERS ---
     document.getElementById('addProduct').addEventListener('click', addProductRow);
     document.getElementById('resetBill').addEventListener('click', resetBill);
@@ -95,15 +98,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function resetBill() {
         if (confirm('Are you sure you want to reset the bill? All data will be lost.')) {
-            // Reset seller information
+            // Reset seller information (but keep company details)
             document.getElementById('firmName').value = '';
             document.getElementById('gstNumber').value = '';
-            document.getElementById('billNumber').value = '';
+            document.getElementById('sellerAddress').value = '';
             
             // Reset customer information
             document.getElementById('customerName').value = '';
             document.getElementById('customerGst').value = '';
-            document.getElementById('sellerAddress').value = '';
             document.getElementById('customerAddress').value = '';
             
             // Reset products
@@ -118,6 +120,57 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add initial product row and reset total
             addProductRow();
             calculateTotal();
+            
+            // Reload company details to auto-fill again
+            loadCompanyDetails();
+        }
+    }
+
+    // --- COMPANY DETAILS FUNCTIONS ---
+
+    async function loadCompanyDetails() {
+        try {
+            const response = await fetch('/api/get-company-details/');
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                const company = result.company;
+                
+                // Auto-fill company details in the form
+                if (company.companyName) {
+                    document.getElementById('firmName').value = company.companyName;
+                }
+                
+                if (company.gstNumber) {
+                    document.getElementById('gstNumber').value = company.gstNumber;
+                }
+                
+                // Build address string
+                if (company.address || company.city || company.state || company.pincode) {
+                    const addressParts = [];
+                    if (company.address) addressParts.push(company.address);
+                    if (company.city || company.state || company.pincode) {
+                        const cityStatePincode = [company.city, company.state, company.pincode]
+                            .filter(part => part)
+                            .join(', ');
+                        if (cityStatePincode) addressParts.push(cityStatePincode);
+                    }
+                    
+                    document.getElementById('sellerAddress').value = addressParts.join('\n');
+                }
+                
+                // Show success message if company details were auto-filled
+                if (company.companyName && company.gstNumber) {
+                    console.log('Company details auto-filled from onboarding data');
+                }
+            } else {
+                // Company details not set up yet - show informational message
+                console.log('Company details not set up. User needs to fill manually.');
+                showAppAlert('Please set up your company details in the onboarding to auto-fill seller information.', 'info');
+            }
+        } catch (error) {
+            console.error('Error loading company details:', error);
+            showAppAlert('Unable to load company details. Please fill seller information manually.', 'warning');
         }
     }
     
@@ -135,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
         try {
-            const response = await fetch('save/', {
+            const response = await fetch('/api/save/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -147,7 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (response.ok) {
-                showAppAlert(`Pakka Bill generated successfully! ID: ${result.bill_id}`, 'success');
+                let successMessage = result.message;
+                if (result.bill_number) {
+                    successMessage += ` Bill Number: ${result.bill_number}`;
+                }
+                showAppAlert(successMessage, 'success');
                 // Optionally reset form after successful generation
                 // resetBill();
             } else {
@@ -186,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
             firmName: document.getElementById('firmName')?.value || '',
             gstNumber: document.getElementById('gstNumber')?.value || '',
             billDate: document.getElementById('billDate')?.value || '',
-            billNumber: document.getElementById('billNumber')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
             customerGst: document.getElementById('customerGst')?.value || '',
             sellerAddress: document.getElementById('sellerAddress')?.value || '',
@@ -247,6 +303,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // A simple replacement for alert()
     function showAppAlert(message, type = 'success') {
         console.log(`ALERT (${type}):`, message);
-        alert(message); 
+        
+        // Use the global showAppAlert function if available, otherwise use basic alert
+        if (window.showAppAlert) {
+            window.showAppAlert(message, type);
+        } else {
+            // Fallback to basic alert with color coding
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `p-4 mb-4 rounded-lg ${
+                type === 'success' ? 'bg-green-900 text-green-200 border border-green-700' :
+                type === 'error' ? 'bg-red-900 text-red-200 border border-red-700' :
+                type === 'warning' ? 'bg-yellow-900 text-yellow-200 border border-yellow-700' :
+                'bg-blue-900 text-blue-200 border border-blue-700'
+            }`;
+            alertDiv.textContent = message;
+            
+            // Insert at the top of the content
+            const content = document.querySelector('main');
+            if (content) {
+                content.insertBefore(alertDiv, content.firstChild);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            } else {
+                alert(message);
+            }
+        }
     }
 });

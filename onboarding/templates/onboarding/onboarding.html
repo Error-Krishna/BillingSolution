@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Welcome to Nexus Bills - Setup Your Company{% endblock %}
+{% block page_title %}Welcome to Nexus Bills!{% endblock %}
+{% block page_subtitle %}Let's set up your company details to get started{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card rounded-xl p-6 mb-6">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-neon to-electric rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Company Setup</h2>
+            <p class="text-gray-400">Please provide your company details to start creating bills</p>
+        </div>
+
+        <form id="companySetupForm">
+            {% csrf_token %}
+            
+            <!-- Company Basic Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-neon mb-4 border-b border-mystic pb-2">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Company Name *</label>
+                        <input type="text" id="companyName" name="companyName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter company name" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">GST Number *</label>
+                        <input type="text" id="gstNumber" name="gstNumber" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="GSTIN Number" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Phone number">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                        <input type="email" id="email" name="email" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Email address">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Company Address -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-neon mb-4 border-b border-mystic pb-2">Company Address</h3>
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Street Address *</label>
+                        <textarea id="address" name="address" rows="3" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Full street address" required></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">City *</label>
+                            <input type="text" id="city" name="city" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="City" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">State *</label>
+                            <input type="text" id="state" name="state" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="State" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Pincode *</label>
+                            <input type="text" id="pincode" name="pincode" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Pincode" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Details (Optional) -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-neon mb-4 border-b border-mystic pb-2">Bank Details (Optional)</h3>
+                <p class="text-sm text-gray-400 mb-4">These details will be shown on your pakka bills</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Bank Name</label>
+                        <input type="text" id="bankName" name="bankName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Bank name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Account Number</label>
+                        <input type="text" id="accountNumber" name="accountNumber" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Account number">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">IFSC Code</label>
+                        <input type="text" id="ifscCode" name="ifscCode" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="IFSC code">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Website</label>
+                        <input type="url" id="website" name="website" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Website URL">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-center mt-8">
+                <button type="submit" class="btn-primary px-8 py-3 rounded-lg font-medium text-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Complete Setup & Get Started
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="text-center text-gray-500 text-sm">
+        <p>You can update these details later from the settings (coming soon)</p>
+    </div>
+</div>
+
+<script src="{% static 'js/onboarding.js' %}"></script>
+{% endblock %}

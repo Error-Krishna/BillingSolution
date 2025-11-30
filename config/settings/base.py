@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'pakka_bills',
     'drafts',
     'core',
+    'onboarding',
 ]
 
 MIDDLEWARE = [
@@ -31,6 +32,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'onboarding.middleware.OnboardingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

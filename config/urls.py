@@ -8,4 +8,5 @@ urlpatterns = [
     path('', include('kacha_bills.urls')),
     path('', include('pakka_bills.urls')),
     path('', include('drafts.urls')),
+    path('', include('onboarding.urls')),
 ]
