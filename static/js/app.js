@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggleButton = document.getElementById('mobile-menu-toggle');
+    const desktopToggle = document.getElementById('desktop-sidebar-toggle');
     const sidebarItems = document.querySelectorAll('.sidebar-item');
 
     // Mobile menu functions
@@ -28,6 +29,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 openMenu();
             }
         });
+    }
+
+    // Desktop sidebar toggle functionality
+    function initSidebarToggle() {
+        const mainContent = document.querySelector('.min-h-screen.flex.flex-col');
+        
+        if (desktopToggle && sidebar && mainContent) {
+            // Check saved state
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('sidebar-desktop-hidden');
+                mainContent.classList.add('main-content-expanded');
+                
+                // Update toggle button icon
+                updateToggleButtonIcon(true);
+            }
+            
+            desktopToggle.addEventListener('click', function() {
+                const isCollapsed = sidebar.classList.toggle('sidebar-desktop-hidden');
+                mainContent.classList.toggle('main-content-expanded');
+                
+                // Update toggle button icon
+                updateToggleButtonIcon(isCollapsed);
+                
+                // Save state
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+            });
+        }
+    }
+
+    function updateToggleButtonIcon(isCollapsed) {
+        if (!desktopToggle) return;
+        
+        if (isCollapsed) {
+            desktopToggle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            `;
+        } else {
+            desktopToggle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            `;
+        }
     }
 
     // Close menu when clicking on overlay
@@ -270,23 +318,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 // Update business email if available
-                if (company.email) {
-                    const businessEmailElements = document.querySelectorAll('.business-email');
-                    businessEmailElements.forEach(el => {
-                        el.textContent = company.email;
-                    });
-                }
+                const businessEmailElements = document.querySelectorAll('.business-email');
+                businessEmailElements.forEach(el => {
+                    el.textContent = company.email || 'business@example.com';
+                });
 
                 // Update the user avatar with company initials
                 const userAvatar = document.querySelector('.user-avatar');
-                if (userAvatar && company.companyName) {
+                const businessInitials = document.querySelector('.business-initials');
+                
+                if (userAvatar && businessInitials && company.companyName) {
                     const initials = company.companyName
                         .split(' ')
                         .map(word => word.charAt(0))
                         .join('')
                         .toUpperCase()
                         .substring(0, 2);
-                    userAvatar.textContent = initials;
+                    businessInitials.textContent = initials;
+                }
+                
+                // Update page title with company name if it's the default
+                const pageTitle = document.querySelector('.glow-text');
+                if (pageTitle && (pageTitle.textContent.includes('Page name') || pageTitle.textContent.includes('Dashboard'))) {
+                    pageTitle.textContent = `${company.companyName} Dashboard`;
+                }
+                
+                // Update document title
+                if (company.companyName && !document.title.includes(company.companyName)) {
+                    document.title = `${company.companyName} - Nexus Bills`;
                 }
             }
         } catch (error) {
@@ -298,18 +357,141 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize company info
     loadCompanyInfo();
 
+    // Initialize sidebar toggle
+    initSidebarToggle();
+
     // Initialize any tooltips
     function initTooltips() {
         const elementsWithTitle = document.querySelectorAll('[title]');
         elementsWithTitle.forEach(element => {
             element.addEventListener('mouseenter', function(e) {
                 // Custom tooltip implementation can be added here
+                const title = this.getAttribute('title');
+                if (title) {
+                    // Simple tooltip implementation
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'fixed z-50 px-2 py-1 text-sm bg-gray-900 text-white rounded shadow-lg';
+                    tooltip.textContent = title;
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + window.scrollX}px`;
+                    tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 5}px`;
+                    
+                    this.setAttribute('data-tooltip', tooltip);
+                    this.removeAttribute('title');
+                    
+                    this.addEventListener('mouseleave', function() {
+                        if (tooltip.parentNode) {
+                            tooltip.parentNode.removeChild(tooltip);
+                        }
+                        this.setAttribute('title', title);
+                    }, { once: true });
+                }
             });
         });
     }
 
     // Initialize when DOM is ready
     initTooltips();
+
+    // Handle window resize
+    function handleResize() {
+        if (window.innerWidth >= 1024) {
+            // On desktop, ensure mobile menu is closed
+            closeMenu();
+        }
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    // Enhanced form handling
+    window.handleFormSubmit = async function(formElement, successCallback, errorCallback) {
+        try {
+            const formData = new FormData(formElement);
+            const submitButton = formElement.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            
+            // Show loading state
+            submitButton.innerHTML = `
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Processing...
+            `;
+            submitButton.disabled = true;
+            
+            const response = await fetch(formElement.action, {
+                method: formElement.method,
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    ...(formElement.enctype !== 'multipart/form-data' && { 
+                        'Content-Type': 'application/json' 
+                    })
+                },
+                body: formElement.enctype === 'multipart/form-data' ? formData : JSON.stringify(Object.fromEntries(formData))
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                if (successCallback) {
+                    successCallback(result);
+                } else {
+                    showAppAlert('Operation completed successfully!', 'success');
+                }
+            } else {
+                throw new Error(result.message || 'Operation failed');
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Form submission error:', error);
+            
+            if (errorCallback) {
+                errorCallback(error);
+            } else {
+                showAppAlert(error.message || 'An error occurred', 'error');
+            }
+            
+            throw error;
+        } finally {
+            // Reset button state
+            const submitButton = formElement.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        }
+    };
+
+    // Utility for debouncing function calls
+    window.debounce = function(func, wait, immediate) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                timeout = null;
+                if (!immediate) func(...args);
+            };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func(...args);
+        };
+    };
+
+    // Utility for deep cloning objects
+    window.deepClone = function(obj) {
+        if (obj === null || typeof obj !== 'object') return obj;
+        if (obj instanceof Date) return new Date(obj.getTime());
+        if (obj instanceof Array) return obj.map(item => window.deepClone(item));
+        if (obj instanceof Object) {
+            const clonedObj = {};
+            Object.keys(obj).forEach(key => {
+                clonedObj[key] = window.deepClone(obj[key]);
+            });
+            return clonedObj;
+        }
+    };
 
     // Debug info
     console.log('App initialized successfully. Current path:', window.location.pathname);
@@ -334,10 +516,29 @@ window.openMobileMenu = function() {
     document.body.style.overflow = 'hidden';
 };
 
-// Page load performance monitoring
+// Auto-load company info on page load
 window.addEventListener('load', () => {
+    // Re-load company info to ensure latest data
+    if (typeof loadCompanyInfo === 'function') {
+        setTimeout(loadCompanyInfo, 100);
+    }
+    
+    // Page load performance monitoring
     if (performance.getEntriesByType('navigation').length > 0) {
         const navEntry = performance.getEntriesByType('navigation')[0];
         console.log('Page loaded in:', (navEntry.loadEventEnd - navEntry.fetchStart).toFixed(2), 'ms');
     }
 });
+
+// Export functions for module usage (if needed)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        showAppAlert: window.showAppAlert,
+        formatCurrency: window.formatCurrency,
+        formatDate: window.formatDate,
+        getCSRFToken: window.getCSRFToken,
+        handleFetchError: window.handleFetchError,
+        debounce: window.debounce,
+        deepClone: window.deepClone
+    };
+}
