@@ -3,10 +3,12 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection
+from core.mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from collections import Counter
+
+from core.mongo_client import get_next_bill_number
 
 # ===== DASHBOARD VIEWS =====
 
@@ -390,6 +392,7 @@ def drafts_view(request):
     """
     return render(request, 'kachaBill/drafts.html')
 
+# In views.py, update the save_bill_view function
 @csrf_exempt
 def save_bill_view(request):
     """
@@ -411,6 +414,10 @@ def save_bill_view(request):
                 del bill_data['status']
             if 'draftId' in bill_data:
                 del bill_data['draftId']
+            
+            # Generate automatic bill number for new bills
+            if not draft_id and not bill_data.get('billNumber'):
+                bill_data['billNumber'] = get_next_bill_number(status)
             
             # If we have a draftId and status is draft, UPDATE the existing draft
             if draft_id and status == 'draft':
@@ -468,6 +475,7 @@ def save_bill_view(request):
                     'status': 'success', 
                     'message': message, 
                     'bill_id': str(result.inserted_id),
+                    'bill_number': bill_data.get('billNumber'),
                     'updated': False
                 })
             

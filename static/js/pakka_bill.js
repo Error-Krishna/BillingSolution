@@ -210,11 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('gstNumber').focus();
             return false;
         }
-        if (!billData.billNumber.trim()) {
-            showAppAlert('Please enter bill number.', 'error');
-            document.getElementById('billNumber').focus();
-            return false;
-        }
         
         // Validate customer information
         if (!billData.customerName.trim()) {

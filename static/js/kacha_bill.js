@@ -61,9 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (draft.billDate) {
             document.getElementById('billDate').value = draft.billDate;
         }
-        if (draft.billNumber) {
-            document.getElementById('billNumber').value = draft.billNumber;
-        }
         if (draft.customerName) {
             document.getElementById('customerName').value = draft.customerName;
         }
@@ -209,7 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetBill() {
         if (confirm('Are you sure you want to reset the bill? All data will be lost.')) {
             document.getElementById('firmName').value = '';
-            document.getElementById('billNumber').value = '';
             document.getElementById('customerName').value = '';
             document.getElementById('notes').value = '';
             
@@ -350,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return {
             firmName: document.getElementById('firmName')?.value || '',
             billDate: document.getElementById('billDate')?.value || '',
-            billNumber: document.getElementById('billNumber')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
             products: products,
             totalAmount: parseFloat(document.getElementById('totalAmount')?.textContent.replace('₹', '') || 0),
@@ -362,11 +357,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!billData.firmName.trim()) {
             showAppAlert('Please enter firm name.', 'error');
             document.getElementById('firmName').focus();
-            return false;
-        }
-        if (!billData.billNumber.trim()) {
-            showAppAlert('Please enter bill number.', 'error');
-            document.getElementById('billNumber').focus();
             return false;
         }
         if (billData.products.length === 0) {

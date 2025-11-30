@@ -1,44 +1,66 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Kacha Bill Generator - Nexus Bills{% endblock %}
-<h2 class="text-xl font-semibold glow-text truncate page-title">{% block page_title %}Kacha Bill Generator{% endblock %}</h2>
-{% block page_subtitle %}Create initial bills for deal negotiation{% endblock %}
+{% block title %}Pakka Bill Generator - Nexus Bills{% endblock %}
+{% block page_title %}Pakka Bill Generator{% endblock %}
+{% block page_subtitle %}Create final official bills with complete details{% endblock %}
 
 {% block content %}
 {% csrf_token %}
 <div class="max-w-6xl mx-auto">
     <div class="card rounded-xl p-6 mb-6">
-        <h3 class="text-lg font-semibold mb-4 text-neon">Kacha Bill Information</h3>
-        <p class="text-gray-400 mb-4">Create initial bills to share with customers until deal is locked</p>
+        <h3 class="text-lg font-semibold mb-4 text-neon">Pakka Bill Information</h3>
+        <p class="text-gray-400 mb-4">Create final official bills with complete seller and tax details</p>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Firm Name</label>
-                <input type="text" id="firmName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter firm name">
+            <div class="md:col-span-2">
+                <h4 class="text-md font-semibold text-glow mb-3">Seller Information</h4>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Bill Date</label>
-                <input type="date" id="billDate" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Firm Name *</label>
+                <input type="text" id="firmName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter firm name" required>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Bill Number</label>
-                <input type="text" id="billNumber" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="e.g., KACHA-001">
+                <label class="block text-sm font-medium text-gray-300 mb-2">GST Number *</label>
+                <input type="text" id="gstNumber" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="GSTIN Number" required>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Name</label>
-                <input type="text" id="customerName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter customer name">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Bill Date *</label>
+                <input type="date" id="billDate" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" required>
+            </div>
+            <div class="md:col-span-2">
+                <h4 class="text-md font-semibold text-glow mb-3 mt-4">Customer Information</h4>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Name *</label>
+                <input type="text" id="customerName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter customer name" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Customer GST</label>
+                <input type="text" id="customerGst" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Customer GSTIN">
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Seller Address *</label>
+                <textarea id="sellerAddress" rows="2" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Complete business address" required></textarea>
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Address</label>
+                <textarea id="customerAddress" rows="2" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Customer delivery address"></textarea>
             </div>
         </div>
     </div>
 
-    <!-- Products section (same as before) -->
+    <!-- Products & Services Section -->
     <div class="card rounded-xl p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-neon">Products</h3>
+            <h3 class="text-lg font-semibold text-neon">Products & Services</h3>
             <button id="addProduct" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
@@ -60,7 +82,7 @@
                     </tr>
                 </thead>
                 <tbody id="productsBody" class="divide-y divide-mystic">
-                    </tbody>
+                </tbody>
                 <tfoot class="bg-midnight border-t border-mystic">
                     <tr>
                         <td colspan="4" class="py-3 px-4 text-right text-sm font-medium text-gray-300">Total Amount:</td>
@@ -73,23 +95,21 @@
     </div>
 
     <div class="card rounded-xl p-6 mb-6">
-        <h3 class="text-lg font-semibold mb-4 text-neon">Additional Information</h3>
-        <textarea id="notes" rows="3" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Add any additional notes or terms here..."></textarea>
+        <h3 class="text-lg font-semibold mb-4 text-neon">Terms & Conditions</h3>
+        <textarea id="terms" rows="3" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Payment terms, delivery terms, etc."></textarea>
     </div>
 
     <div class="flex justify-end space-x-4">
         <button id="resetBill" class="px-6 py-2 border border-mystic text-gray-300 rounded-lg hover:bg-mystic transition">
             Reset
         </button>
-        <button id="saveDraft" class="px-6 py-2 bg-electric text-white rounded-lg hover:bg-opacity-90 transition">
-            Save Draft
-        </button>
-        <button id="generateBill" class="btn-primary px-6 py-2 rounded-lg font-medium">
-            Generate Kacha Bill
+        <button id="generatePakkaBill" class="btn-primary px-6 py-2 rounded-lg font-medium">
+            Generate Pakka Bill
         </button>
     </div>
 </div>
 
+<!-- Product Row Template -->
 <template id="productRowTemplate">
     <tr class="product-row">
         <td class="py-3 px-4 serial-number">1</td>
@@ -113,5 +133,5 @@
     </tr>
 </template>
 
-<script src="{% static 'js/kacha_bill.js' %}"></script>
+<script src="{% static 'js/pakka_bill.js' %}"></script>
 {% endblock %}

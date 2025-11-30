@@ -1,4 +1,4 @@
-# mongo_client.py
+# core/mongo_client.py
 import logging
 from decouple import config
 from pymongo import MongoClient, errors
@@ -56,6 +56,42 @@ def get_kacha_bills_collection(db_name: str = "DigitalMemo", collection_name: st
     db = get_db(db_name)
     return db[collection_name]
 
+def get_pakka_bills_collection(db_name: str = "DigitalMemo", collection_name: str = "pakka_bills"):
+    """
+    Get the 'pakka_bills' collection handle for final official bills.
+    """
+    db = get_db(db_name)
+    return db[collection_name]
+
+def get_next_sequence_value(sequence_name, db_name="DigitalMemo"):
+    """
+    Get the next sequence value for automatic numbering
+    """
+    db = get_db(db_name)
+    counters = db['counters']
+    
+    result = counters.find_one_and_update(
+        {'_id': sequence_name},
+        {'$inc': {'sequence_value': 1}},
+        upsert=True,
+        return_document=True
+    )
+    return result['sequence_value']
+
+def get_next_bill_number(bill_type, db_name="DigitalMemo"):
+    """
+    Get next bill number based on type
+    """
+    prefix = {
+        'kacha': 'KACHA',
+        'pakka': 'PAKKA',
+        'draft': 'DRAFT'
+    }.get(bill_type, 'BILL')
+    
+    sequence_name = f"{bill_type}_bill_number"
+    next_number = get_next_sequence_value(sequence_name, db_name)
+    return f"{prefix}-{next_number:03d}"
+
 def close_client():
     """
     Close the global client (call on app shutdown if needed).
@@ -65,11 +101,3 @@ def close_client():
         client.close()
         client = None
         logger.info("MongoDB client closed.")
-
-
-def get_pakka_bills_collection(db_name: str = "DigitalMemo", collection_name: str = "pakka_bills"):
-    """
-    Get the 'pakka_bills' collection handle for final official bills.
-    """
-    db = get_db(db_name)
-    return db[collection_name]
