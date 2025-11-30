@@ -148,3 +148,68 @@ def convert_kacha_to_pakka(request, kacha_id):
         'status': 'error', 
         'message': 'Invalid request method'
     }, status=405)
+
+
+@csrf_exempt
+def delete_kacha_bill(request, kacha_id):
+    """
+    Delete a kacha bill by ID
+    """
+    if request.method == 'DELETE':
+        try:
+            kacha_bills_collection = get_kacha_bills_collection()
+            result = kacha_bills_collection.delete_one({'_id': ObjectId(kacha_id)})
+            
+            if result.deleted_count == 1:
+                return JsonResponse({
+                    'status': 'success', 
+                    'message': 'Kacha Bill deleted successfully!'
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Kacha Bill not found'
+                }, status=404)
+                
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': str(e)
+            }, status=400)
+            
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Invalid request method. Only DELETE allowed.'
+    }, status=405)
+
+def get_kacha_bill_by_id(request, kacha_id):
+    """
+    API endpoint to get a single kacha bill by ID
+    """
+    if request.method == 'GET':
+        try:
+            kacha_bills_collection = get_kacha_bills_collection()
+            bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id)})
+            
+            if bill:
+                bill['_id'] = str(bill['_id'])
+                return JsonResponse({
+                    'status': 'success', 
+                    'bill': bill
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Kacha Bill not found'
+                }, status=404)
+                
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error', 
+                'message': str(e)
+            }, status=400)
+            
+    return JsonResponse({
+        'status': 'error', 
+        'message': 'Invalid request method'
+    }, status=405)

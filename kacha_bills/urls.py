@@ -8,5 +8,7 @@ urlpatterns = [
     path('kacha-bill/', views.kacha_bill_view, name='kacha_bill'),
     path('kacha-bills/', views.kacha_bills_view, name='kacha_bills'),
     path('api/get-kacha-bills/', views.get_all_kacha_bills, name='get_all_kacha_bills'),
+    path('api/get-kacha-bill/<str:kacha_id>/', views.get_kacha_bill_by_id, name='get_kacha_bill_by_id'),  # Add this line
     path('api/convert/kacha-to-pakka/<str:kacha_id>/', views.convert_kacha_to_pakka, name='convert_kacha_to_pakka'),
+    path('api/delete-kacha-bill/<str:kacha_id>/', views.delete_kacha_bill, name='delete_kacha_bill'),
 ]

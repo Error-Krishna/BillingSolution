@@ -10,13 +10,16 @@ document.addEventListener('DOMContentLoaded', function() {
         billDateEl.value = new Date().toISOString().split('T')[0];
     }
     
-    // Check if we're editing a draft
+    // Check if we're editing a draft or viewing a bill
     const urlParams = new URLSearchParams(window.location.search);
     const draftId = urlParams.get('draft');
+    const viewId = urlParams.get('view');
     
     if (draftId) {
         currentDraftId = draftId;
         loadDraftData(draftId);
+    } else if (viewId) {
+        loadBillForView(viewId);
     } else {
         addProductRow();
     }
@@ -25,11 +28,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const addProductBtn = document.getElementById('addProduct');
     const resetBillBtn = document.getElementById('resetBill');
     const saveDraftBtn = document.getElementById('saveDraft');
+    const downloadBillBtn = document.getElementById('downloadBill');
     const generateBillBtn = document.getElementById('generateBill');
 
     if (addProductBtn) addProductBtn.addEventListener('click', addProductRow);
     if (resetBillBtn) resetBillBtn.addEventListener('click', resetBill);
     if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
+    if (downloadBillBtn) downloadBillBtn.addEventListener('click', downloadCurrentBill);
     if (generateBillBtn) generateBillBtn.addEventListener('click', generateBill);
     
     // --- FUNCTIONS ---
@@ -49,6 +54,25 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading draft:', error);
             showAppAlert(`Error loading draft: ${error.message}`, 'error');
             addProductRow();
+        }
+    }
+
+    async function loadBillForView(billId) {
+        try {
+            showAppAlert('Loading bill...', 'info');
+            const response = await fetch(`/api/get-kacha-bill/${billId}/`);
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                populateFormWithBill(result.bill);
+                setViewMode();
+                showAppAlert('Bill loaded successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to load bill');
+            }
+        } catch (error) {
+            console.error('Error loading bill:', error);
+            showAppAlert(`Error loading bill: ${error.message}`, 'error');
         }
     }
     
@@ -84,6 +108,66 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateSerialNumbers();
         updateUIForEditMode();
+    }
+
+    function populateFormWithBill(bill) {
+        if (bill.firmName) document.getElementById('firmName').value = bill.firmName;
+        if (bill.billDate) document.getElementById('billDate').value = bill.billDate;
+        if (bill.customerName) document.getElementById('customerName').value = bill.customerName;
+        if (bill.customerAddress) document.getElementById('customerAddress').value = bill.customerAddress;
+        if (bill.notes) document.getElementById('notes').value = bill.notes;
+        if (bill.terms) document.getElementById('terms').value = bill.terms;
+        
+        const productsBody = document.getElementById('productsBody');
+        if (productsBody) productsBody.innerHTML = '';
+        
+        if (bill.products && bill.products.length > 0) {
+            bill.products.forEach(product => {
+                addProductRow();
+                const rows = document.querySelectorAll('.product-row');
+                const newRow = rows[rows.length - 1];
+                
+                if (newRow) {
+                    newRow.querySelector('.product-name').value = product.name || '';
+                    newRow.querySelector('.quantity').value = product.quantity || 1;
+                    newRow.querySelector('.rate').value = product.rate || 0;
+                    calculateRowAmount({ target: newRow.querySelector('.quantity') });
+                }
+            });
+        } else {
+            addProductRow();
+        }
+        
+        updateSerialNumbers();
+    }
+
+    function setViewMode() {
+        // Make all fields read-only
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.disabled = true;
+        });
+        
+        // Hide action buttons
+        document.getElementById('resetBill').style.display = 'none';
+        document.getElementById('saveDraft').style.display = 'none';
+        document.getElementById('downloadBill').style.display = 'none';
+        document.getElementById('generateBill').style.display = 'none';
+        
+        // Add download button
+        const actionButtons = document.querySelector('.flex.justify-end.space-x-4');
+        const downloadBtn = document.createElement('button');
+        downloadBtn.id = 'downloadCurrentBill';
+        downloadBtn.className = 'btn-primary px-6 py-2 rounded-lg font-medium';
+        downloadBtn.innerHTML = 'Download PDF';
+        downloadBtn.onclick = function() {
+            downloadCurrentBillPDF();
+        };
+        actionButtons.appendChild(downloadBtn);
+        
+        // Update page title
+        const pageTitle = document.querySelector('.page-title');
+        if (pageTitle) pageTitle.textContent = 'View Kacha Bill';
     }
 
     function updateUIForEditMode() {
@@ -199,6 +283,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function downloadCurrentBill() {
+        const billData = collectBillData();
+        if (validateBill(billData)) {
+            // For now, show an alert. You can implement PDF generation later
+            showAppAlert('PDF download feature will be implemented soon!', 'info');
+            
+            // Future implementation:
+            // generatePDF(billData);
+        }
+    }
+
+    function downloadCurrentBillPDF() {
+        const billData = collectBillData();
+        // For now, show an alert. You can implement PDF generation later
+        showAppAlert('PDF download feature will be implemented soon!', 'info');
+        
+        // Future implementation:
+        // generatePDF(billData);
+    }
+
     function collectBillData() {
         const products = [];
         document.querySelectorAll('.product-row').forEach(row => {
@@ -256,12 +360,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         for (let i = 0; i < billData.products.length; i++) {
-            if (!billData.products[i].name.trim()) {
+            const product = billData.products[i];
+            if (!product.name.trim()) {
                 showAppAlert(`Please enter a name for product ${i + 1}.`, 'error');
                 return false;
             }
+            if (product.quantity <= 0) {
+                showAppAlert(`Please enter a valid quantity (greater than 0) for product "${product.name}".`, 'error');
+                return false;
+            }
+            if (product.rate <= 0) {
+                showAppAlert(`Please enter a valid rate (greater than 0) for product "${product.name}".`, 'error');
+                return false;
+            }
         }
-        
 
         return true;
     }

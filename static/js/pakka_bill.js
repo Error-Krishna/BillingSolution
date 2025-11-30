@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- EVENT LISTENERS ---
     document.getElementById('addProduct').addEventListener('click', addProductRow);
     document.getElementById('resetBill').addEventListener('click', resetBill);
+    document.getElementById('downloadPakkaBill').addEventListener('click', downloadPakkaBill);
     document.getElementById('generatePakkaBill').addEventListener('click', generatePakkaBill);
 
     // --- CORE FUNCTIONS ---
@@ -174,6 +175,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function downloadPakkaBill() {
+        const billData = collectBillData();
+        if (validateBill(billData)) {
+            // For now, show an alert. You can implement PDF generation later
+            showAppAlert('Pakka Bill PDF download feature will be implemented soon!', 'info');
+            
+            // Future implementation:
+            // generatePDF(billData);
+        }
+    }
+
     async function sendDataToServer(billData) {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
@@ -295,7 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         for (let i = 0; i < billData.products.length; i++) {
-            if (!billData.products[i].name.trim()) {
+            const product = billData.products[i];
+            if (!product.name.trim()) {
                 showAppAlert(`Please enter a name for product ${i + 1}.`, 'error');
                 const productRows = document.querySelectorAll('.product-row');
                 if (productRows[i]) {
@@ -304,6 +317,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         productNameInput.focus();
                     }
                 }
+                return false;
+            }
+            if (product.quantity <= 0) {
+                showAppAlert(`Please enter a valid quantity (greater than 0) for product "${product.name}".`, 'error');
+                return false;
+            }
+            if (product.rate <= 0) {
+                showAppAlert(`Please enter a valid rate (greater than 0) for product "${product.name}".`, 'error');
                 return false;
             }
         }

@@ -61,20 +61,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="text-sm text-yellow-500 mt-2">Total: ${bill.totalAmount ? '₹' + bill.totalAmount.toFixed(2) : '₹0.00'}</p>
                         ${bill.converted_from ? `<p class="text-xs text-gray-500 mt-1">Converted from: ${bill.converted_from}</p>` : ''}
                     </div>
-                    <div class="flex space-x-2 ml-4">
-                        <button onclick="convertToPakka('${bill._id}')" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            Convert to Pakka
-                        </button>
-                        <button onclick="viewKachaBill('${bill._id}')" class="px-3 py-1 bg-electric text-white rounded text-sm hover:bg-opacity-90 transition flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                            </svg>
-                            View
-                        </button>
+                    <div class="flex flex-col space-y-2 ml-4">
+                        <div class="flex space-x-2">
+                            <button onclick="convertToPakka('${bill._id}')" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                Convert to Pakka
+                            </button>
+                            <button onclick="viewKachaBill('${bill._id}')" class="px-3 py-1 bg-electric text-white rounded text-sm hover:bg-opacity-90 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                                View
+                            </button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="downloadKachaBillPDF('${bill._id}')" class="px-3 py-1 bg-neon text-white rounded text-sm hover:bg-opacity-90 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                                Download PDF
+                            </button>
+                            <button onclick="deleteKachaBill('${bill._id}')" class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -141,5 +157,61 @@ document.addEventListener('DOMContentLoaded', function() {
     window.viewKachaBill = function(kachaId) {
         // Redirect to kacha bill page with view mode
         window.location.href = '/kacha-bill/?view=' + kachaId;
+    };
+
+    window.downloadKachaBillPDF = function(kachaId) {
+        // For now, show an alert. You can implement PDF generation later
+        showAppAlert('Kacha Bill PDF download feature will be implemented soon!', 'info');
+        
+        // Future implementation:
+        // window.location.href = '/api/download-kacha-bill/' + kachaId + '/';
+    };
+
+    window.deleteKachaBill = async function(kachaId) {
+        if (!confirm('Are you sure you want to delete this Kacha Bill? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            // Show deleting state
+            const billElement = document.getElementById(`kacha-bill-${kachaId}`);
+            if (billElement) {
+                billElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500 mx-auto mb-2"></div>
+                        <p class="text-sm text-gray-400">Deleting...</p>
+                    </div>
+                `;
+            }
+
+            const response = await fetch(`/api/delete-kacha-bill/${kachaId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                showAppAlert(result.message, 'success');
+                // Remove the kacha bill from UI
+                if (billElement) {
+                    billElement.remove();
+                }
+                // Check if there are any bills left
+                const remainingBills = document.querySelectorAll('[id^="kacha-bill-"]');
+                if (remainingBills.length === 0) {
+                    showEmptyState();
+                }
+            } else {
+                throw new Error(result.message || 'Failed to delete kacha bill');
+            }
+        } catch (error) {
+            console.error('Error deleting kacha bill:', error);
+            showAppAlert(`Error deleting bill: ${error.message}`, 'error');
+            // Reload the list to reset any UI changes
+            loadKachaBills();
+        }
     };
 });
