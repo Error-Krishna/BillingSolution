@@ -3,9 +3,9 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from core.mongo_client import get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number
+from core.mongo_client import get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number, get_company_details_collection
 from bson.objectid import ObjectId
-from datetime import datetime  # Add this import
+from datetime import datetime
 
 def kacha_bill_view(request):
     """
@@ -57,6 +57,7 @@ def convert_kacha_to_pakka(request, kacha_id):
         try:
             kacha_bills_collection = get_kacha_bills_collection()
             pakka_bills_collection = get_pakka_bills_collection()
+            company_collection = get_company_details_collection()
             
             # Get the kacha bill
             kacha_bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id)})
@@ -67,10 +68,49 @@ def convert_kacha_to_pakka(request, kacha_id):
                     'message': 'Kacha Bill not found'
                 }, status=404)
             
+            # Get company details
+            company_details = company_collection.find_one()
+            if not company_details:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Company details not found. Please complete onboarding first.'
+                }, status=400)
+            
             # Remove _id from kacha bill to create new pakka bill
             pakka_data = kacha_bill.copy()
             if '_id' in pakka_data:
                 del pakka_data['_id']
+            
+            # Add company details to pakka bill
+            pakka_data['firmName'] = company_details.get('companyName', '')
+            pakka_data['gstNumber'] = company_details.get('gstNumber', '')
+            
+            # Build seller address from company details
+            address_parts = []
+            if company_details.get('address'):
+                address_parts.append(company_details['address'])
+            city_state_pincode = [
+                company_details.get('city', ''),
+                company_details.get('state', ''),
+                company_details.get('pincode', '')
+            ]
+            city_state_pincode_str = ', '.join([part for part in city_state_pincode if part])
+            if city_state_pincode_str:
+                address_parts.append(city_state_pincode_str)
+            
+            pakka_data['sellerAddress'] = '\n'.join(address_parts)
+            
+            # Add additional company details if available
+            if company_details.get('phone'):
+                pakka_data['sellerPhone'] = company_details['phone']
+            if company_details.get('email'):
+                pakka_data['sellerEmail'] = company_details['email']
+            if company_details.get('bankName'):
+                pakka_data['bankName'] = company_details['bankName']
+            if company_details.get('accountNumber'):
+                pakka_data['accountNumber'] = company_details['accountNumber']
+            if company_details.get('ifscCode'):
+                pakka_data['ifscCode'] = company_details['ifscCode']
             
             # Add conversion metadata and required pakka bill fields
             pakka_data['converted_from'] = 'kacha'
@@ -80,12 +120,7 @@ def convert_kacha_to_pakka(request, kacha_id):
             pakka_data['billNumber'] = get_next_bill_number('pakka')
             
             # Ensure required pakka bill fields exist
-            if 'gstNumber' not in pakka_data:
-                pakka_data['gstNumber'] = 'TO_BE_ADDED'
-            if 'sellerAddress' not in pakka_data:
-                pakka_data['sellerAddress'] = 'TO_BE_ADDED'
-            if 'customerGst' not in pakka_data:
-                pakka_data['customerGst'] = ''
+            # REMOVED: customerGst field
             if 'customerAddress' not in pakka_data:
                 pakka_data['customerAddress'] = ''
             if 'terms' not in pakka_data:

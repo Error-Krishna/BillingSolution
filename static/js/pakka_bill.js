@@ -97,15 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function resetBill() {
-        if (confirm('Are you sure you want to reset the bill? All data will be lost.')) {
-            // Reset seller information (but keep company details)
-            document.getElementById('firmName').value = '';
-            document.getElementById('gstNumber').value = '';
-            document.getElementById('sellerAddress').value = '';
-            
-            // Reset customer information
+        if (confirm('Are you sure you want to reset the bill? All customer data will be lost.')) {
+            // Reset customer information only (seller info stays auto-filled)
             document.getElementById('customerName').value = '';
-            document.getElementById('customerGst').value = '';
             document.getElementById('customerAddress').value = '';
             
             // Reset products
@@ -120,9 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add initial product row and reset total
             addProductRow();
             calculateTotal();
-            
-            // Reload company details to auto-fill again
-            loadCompanyDetails();
         }
     }
 
@@ -136,41 +127,40 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && result.status === 'success') {
                 const company = result.company;
                 
-                // Auto-fill company details in the form
-                if (company.companyName) {
-                    document.getElementById('firmName').value = company.companyName;
-                }
-                
-                if (company.gstNumber) {
-                    document.getElementById('gstNumber').value = company.gstNumber;
-                }
+                // Update the auto-filled seller information display
+                document.getElementById('autoFirmName').textContent = company.companyName || 'Not set';
+                document.getElementById('autoGstNumber').textContent = company.gstNumber || 'Not set';
                 
                 // Build address string
-                if (company.address || company.city || company.state || company.pincode) {
-                    const addressParts = [];
-                    if (company.address) addressParts.push(company.address);
-                    if (company.city || company.state || company.pincode) {
-                        const cityStatePincode = [company.city, company.state, company.pincode]
-                            .filter(part => part)
-                            .join(', ');
-                        if (cityStatePincode) addressParts.push(cityStatePincode);
-                    }
-                    
-                    document.getElementById('sellerAddress').value = addressParts.join('\n');
+                const addressParts = [];
+                if (company.address) addressParts.push(company.address);
+                if (company.city || company.state || company.pincode) {
+                    const cityStatePincode = [company.city, company.state, company.pincode]
+                        .filter(part => part)
+                        .join(', ');
+                    if (cityStatePincode) addressParts.push(cityStatePincode);
                 }
                 
-                // Show success message if company details were auto-filled
-                if (company.companyName && company.gstNumber) {
-                    console.log('Company details auto-filled from onboarding data');
-                }
+                document.getElementById('autoSellerAddress').textContent = 
+                    addressParts.join('\n') || 'Not set';
+                
+                console.log('Company details loaded successfully for pakka bill');
             } else {
-                // Company details not set up yet - show informational message
-                console.log('Company details not set up. User needs to fill manually.');
-                showAppAlert('Please set up your company details in the onboarding to auto-fill seller information.', 'info');
+                // Company details not set up yet - show error message
+                document.getElementById('autoFirmName').textContent = 'Not set up';
+                document.getElementById('autoGstNumber').textContent = 'Not set up';
+                document.getElementById('autoSellerAddress').textContent = 'Not set up';
+                
+                showAppAlert('Company details not found. Please complete onboarding first.', 'error');
+                console.error('Company details not found for pakka bill');
             }
         } catch (error) {
             console.error('Error loading company details:', error);
-            showAppAlert('Unable to load company details. Please fill seller information manually.', 'warning');
+            document.getElementById('autoFirmName').textContent = 'Error loading';
+            document.getElementById('autoGstNumber').textContent = 'Error loading';
+            document.getElementById('autoSellerAddress').textContent = 'Error loading';
+            
+            showAppAlert('Unable to load company details. Please complete onboarding first.', 'error');
         }
     }
     
@@ -188,6 +178,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
         try {
+            // First get company details to include in the bill
+            const companyResponse = await fetch('/api/get-company-details/');
+            const companyResult = await companyResponse.json();
+            
+            if (!companyResponse.ok || companyResult.status !== 'success') {
+                throw new Error('Company details not found. Please complete onboarding first.');
+            }
+            
+            // Merge company details with bill data
+            const company = companyResult.company;
+            billData.firmName = company.companyName;
+            billData.gstNumber = company.gstNumber;
+            
+            // Build seller address from company details
+            const addressParts = [];
+            if (company.address) addressParts.push(company.address);
+            if (company.city || company.state || company.pincode) {
+                const cityStatePincode = [company.city, company.state, company.pincode]
+                    .filter(part => part)
+                    .join(', ');
+                if (cityStatePincode) addressParts.push(cityStatePincode);
+            }
+            billData.sellerAddress = addressParts.join('\n');
+            
+            // Add additional company details if available
+            if (company.phone) billData.sellerPhone = company.phone;
+            if (company.email) billData.sellerEmail = company.email;
+            if (company.bankName) billData.bankName = company.bankName;
+            if (company.accountNumber) billData.accountNumber = company.accountNumber;
+            if (company.ifscCode) billData.ifscCode = company.ifscCode;
+            
             const response = await fetch('/api/save/', {
                 method: 'POST',
                 headers: {
@@ -205,8 +226,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     successMessage += ` Bill Number: ${result.bill_number}`;
                 }
                 showAppAlert(successMessage, 'success');
-                // Optionally reset form after successful generation
-                // resetBill();
+                
+                // Redirect to pakka bills list after short delay
+                setTimeout(() => {
+                    window.location.href = '/pakka-bills/';
+                }, 1500);
             } else {
                 throw new Error(result.message || 'Failed to save bill.');
             }
@@ -240,42 +264,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         return {
-            firmName: document.getElementById('firmName')?.value || '',
-            gstNumber: document.getElementById('gstNumber')?.value || '',
             billDate: document.getElementById('billDate')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
-            customerGst: document.getElementById('customerGst')?.value || '',
-            sellerAddress: document.getElementById('sellerAddress')?.value || '',
             customerAddress: document.getElementById('customerAddress')?.value || '',
             products: products,
             totalAmount: parseFloat(document.getElementById('totalAmount')?.textContent.replace('₹', '') || 0),
             terms: document.getElementById('terms')?.value || '',
             billType: 'pakka'
+            // Note: firmName, gstNumber, sellerAddress will be added from company details
         };
     }
     
     function validateBill(billData) {
-        // Validate seller information
-        if (!billData.firmName.trim()) {
-            showAppAlert('Please enter firm name.', 'error');
-            document.getElementById('firmName').focus();
-            return false;
-        }
-        if (!billData.gstNumber.trim()) {
-            showAppAlert('Please enter GST number.', 'error');
-            document.getElementById('gstNumber').focus();
-            return false;
-        }
-        
         // Validate customer information
         if (!billData.customerName.trim()) {
             showAppAlert('Please enter customer name.', 'error');
             document.getElementById('customerName').focus();
             return false;
         }
-        if (!billData.sellerAddress.trim()) {
-            showAppAlert('Please enter seller address.', 'error');
-            document.getElementById('sellerAddress').focus();
+        
+        if (!billData.customerAddress.trim()) {
+            showAppAlert('Please enter customer address.', 'error');
+            document.getElementById('customerAddress').focus();
             return false;
         }
         

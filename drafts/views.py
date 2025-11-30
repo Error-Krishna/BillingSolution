@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from core.mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number
+from core.mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number, get_company_details_collection
 from bson.objectid import ObjectId
 from datetime import datetime
 
@@ -87,6 +87,42 @@ def save_bill_view(request):
                 elif status == 'pakka':
                     collection = get_pakka_bills_collection()
                     message = 'Pakka Bill generated successfully!'
+                    
+                    # For pakka bills, automatically add company details
+                    company_collection = get_company_details_collection()
+                    company_details = company_collection.find_one()
+                    
+                    if company_details:
+                        # Add company details to pakka bill
+                        bill_data['firmName'] = company_details.get('companyName', '')
+                        bill_data['gstNumber'] = company_details.get('gstNumber', '')
+                        
+                        # Build seller address from company details
+                        address_parts = []
+                        if company_details.get('address'):
+                            address_parts.append(company_details['address'])
+                        city_state_pincode = [
+                            company_details.get('city', ''),
+                            company_details.get('state', ''),
+                            company_details.get('pincode', '')
+                        ]
+                        city_state_pincode_str = ', '.join([part for part in city_state_pincode if part])
+                        if city_state_pincode_str:
+                            address_parts.append(city_state_pincode_str)
+                        
+                        bill_data['sellerAddress'] = '\n'.join(address_parts)
+                        
+                        # Add additional company details if available
+                        if company_details.get('phone'):
+                            bill_data['sellerPhone'] = company_details['phone']
+                        if company_details.get('email'):
+                            bill_data['sellerEmail'] = company_details['email']
+                        if company_details.get('bankName'):
+                            bill_data['bankName'] = company_details['bankName']
+                        if company_details.get('accountNumber'):
+                            bill_data['accountNumber'] = company_details['accountNumber']
+                        if company_details.get('ifscCode'):
+                            bill_data['ifscCode'] = company_details['ifscCode']
                 else:
                     return JsonResponse({
                         'status': 'error', 
@@ -276,6 +312,7 @@ def convert_draft_to_pakka(request, draft_id):
         try:
             drafts_collection = get_drafts_collection()
             pakka_bills_collection = get_pakka_bills_collection()
+            company_collection = get_company_details_collection()
             
             # Get the draft
             draft = drafts_collection.find_one({'_id': ObjectId(draft_id)})
@@ -286,10 +323,49 @@ def convert_draft_to_pakka(request, draft_id):
                     'message': 'Draft not found'
                 }, status=404)
             
+            # Get company details
+            company_details = company_collection.find_one()
+            if not company_details:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Company details not found. Please complete onboarding first.'
+                }, status=400)
+            
             # Remove _id from draft to create new pakka bill
             draft_data = draft.copy()
             if '_id' in draft_data:
                 del draft_data['_id']
+            
+            # Add company details to pakka bill
+            draft_data['firmName'] = company_details.get('companyName', '')
+            draft_data['gstNumber'] = company_details.get('gstNumber', '')
+            
+            # Build seller address from company details
+            address_parts = []
+            if company_details.get('address'):
+                address_parts.append(company_details['address'])
+            city_state_pincode = [
+                company_details.get('city', ''),
+                company_details.get('state', ''),
+                company_details.get('pincode', '')
+            ]
+            city_state_pincode_str = ', '.join([part for part in city_state_pincode if part])
+            if city_state_pincode_str:
+                address_parts.append(city_state_pincode_str)
+            
+            draft_data['sellerAddress'] = '\n'.join(address_parts)
+            
+            # Add additional company details if available
+            if company_details.get('phone'):
+                draft_data['sellerPhone'] = company_details['phone']
+            if company_details.get('email'):
+                draft_data['sellerEmail'] = company_details['email']
+            if company_details.get('bankName'):
+                draft_data['bankName'] = company_details['bankName']
+            if company_details.get('accountNumber'):
+                draft_data['accountNumber'] = company_details['accountNumber']
+            if company_details.get('ifscCode'):
+                draft_data['ifscCode'] = company_details['ifscCode']
             
             # Add conversion metadata and required pakka bill fields
             draft_data['converted_from'] = 'draft'
@@ -299,10 +375,9 @@ def convert_draft_to_pakka(request, draft_id):
             draft_data['billNumber'] = get_next_bill_number('pakka')
             
             # Ensure required pakka bill fields exist
-            if 'gstNumber' not in draft_data:
-                draft_data['gstNumber'] = 'TO_BE_ADDED'
-            if 'sellerAddress' not in draft_data:
-                draft_data['sellerAddress'] = 'TO_BE_ADDED'
+            # REMOVED: customerGst field
+            if 'customerAddress' not in draft_data:
+                draft_data['customerAddress'] = ''
             if 'terms' not in draft_data:
                 draft_data['terms'] = ''
             

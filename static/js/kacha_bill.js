@@ -56,7 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (draft.firmName) document.getElementById('firmName').value = draft.firmName;
         if (draft.billDate) document.getElementById('billDate').value = draft.billDate;
         if (draft.customerName) document.getElementById('customerName').value = draft.customerName;
+        if (draft.customerAddress) document.getElementById('customerAddress').value = draft.customerAddress;
         if (draft.notes) document.getElementById('notes').value = draft.notes;
+        if (draft.terms) document.getElementById('terms').value = draft.terms;
         
         // Note: We intentionally DO NOT populate Bill Number here as it is not an input field
         
@@ -161,7 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('Are you sure you want to reset the bill? All data will be lost.')) {
             document.getElementById('firmName').value = '';
             document.getElementById('customerName').value = '';
+            document.getElementById('customerAddress').value = '';
             document.getElementById('notes').value = '';
+            document.getElementById('terms').value = '';
             document.getElementById('productsBody').innerHTML = '';
             currentDraftId = null;
             
@@ -218,9 +222,11 @@ document.addEventListener('DOMContentLoaded', function() {
             firmName: document.getElementById('firmName')?.value || '',
             billDate: document.getElementById('billDate')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
+            customerAddress: document.getElementById('customerAddress')?.value || '',
             products: products,
             totalAmount: parseFloat(document.getElementById('totalAmount')?.textContent.replace('₹', '') || 0),
-            notes: document.getElementById('notes')?.value || ''
+            notes: document.getElementById('notes')?.value || '',
+            terms: document.getElementById('terms')?.value || ''
         };
     }
     
@@ -229,6 +235,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!billData.firmName.trim()) {
             showAppAlert('Please enter firm name.', 'error');
             document.getElementById('firmName')?.focus();
+            return false;
+        }
+        
+        if (!billData.customerName.trim()) {
+            showAppAlert('Please enter customer name.', 'error');
+            document.getElementById('customerName')?.focus();
+            return false;
+        }
+        
+        if (!billData.customerAddress.trim()) {
+            showAppAlert('Please enter customer address.', 'error');
+            document.getElementById('customerAddress')?.focus();
             return false;
         }
         
@@ -291,6 +309,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showAppAlert(message, type = 'success') {
         // You can replace this with a nicer toast notification if you have one
-        alert(message);
+        if (window.showAppAlert) {
+            window.showAppAlert(message, type);
+        } else {
+            alert(message);
+        }
     }
 });

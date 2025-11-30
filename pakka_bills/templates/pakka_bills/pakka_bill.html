@@ -12,27 +12,31 @@
         <h3 class="text-lg font-semibold mb-4 text-neon">Pakka Bill Information</h3>
         <p class="text-gray-400 mb-4">Create final official bills with complete seller and tax details</p>
         
+        <!-- Seller Information (Auto-filled from company details) -->
+        <div class="mb-6 p-4 bg-midnight/50 rounded-lg border border-mystic">
+            <h4 class="text-md font-semibold text-glow mb-3">Seller Information (Auto-filled from Company Details)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Firm Name</label>
+                    <p id="autoFirmName" class="text-gray-400 text-sm">Loading...</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">GST Number</label>
+                    <p id="autoGstNumber" class="text-gray-400 text-sm">Loading...</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                    <p id="autoSellerAddress" class="text-gray-400 text-sm">Loading...</p>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-gray-500">
+                <p>These details are automatically filled from your company information. To update, please go to Settings.</p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
-                <h4 class="text-md font-semibold text-glow mb-3">Seller Information</h4>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Firm Name *</label>
-                <input type="text" id="firmName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter firm name" required>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">GST Number *</label>
-                <input type="text" id="gstNumber" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="GSTIN Number" required>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Bill Date *</label>
-                <input type="date" id="billDate" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" required>
-            </div>
-            <div class="md:col-span-2">
-                <h4 class="text-md font-semibold text-glow mb-3 mt-4">Customer Information</h4>
+                <h4 class="text-md font-semibold text-glow mb-3">Customer Information</h4>
             </div>
             
             <div>
@@ -41,18 +45,13 @@
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Customer GST</label>
-                <input type="text" id="customerGst" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Customer GSTIN">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Bill Date *</label>
+                <input type="date" id="billDate" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" required>
             </div>
 
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-300 mb-2">Seller Address *</label>
-                <textarea id="sellerAddress" rows="2" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Complete business address" required></textarea>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Address</label>
-                <textarea id="customerAddress" rows="2" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Customer delivery address"></textarea>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Address *</label>
+                <textarea id="customerAddress" rows="3" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Complete customer address including city, state, and pincode" required></textarea>
             </div>
         </div>
     </div>
@@ -94,9 +93,14 @@
         </div>
     </div>
 
+    <!-- Terms & Conditions Section -->
     <div class="card rounded-xl p-6 mb-6">
-        <h3 class="text-lg font-semibold mb-4 text-neon">Terms & Conditions</h3>
-        <textarea id="terms" rows="3" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Payment terms, delivery terms, etc."></textarea>
+        <h3 class="text-lg font-semibold mb-4 text-neon">Terms & Conditions (Optional)</h3>
+        <p class="text-gray-400 mb-4 text-sm">Specify the payment terms, delivery terms, and other conditions for this bill.</p>
+        <textarea id="terms" rows="4" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Example: Payment due within 30 days. Goods once sold will not be taken back. Interest @18% p.a. will be charged on overdue payments."></textarea>
+        <div class="mt-2 text-xs text-gray-500">
+            <p>Optional: Common terms include Net 30 days payment, Subject to [Your City] jurisdiction, etc.</p>
+        </div>
     </div>
 
     <div class="flex justify-end space-x-4">
