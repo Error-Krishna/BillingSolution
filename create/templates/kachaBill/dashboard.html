@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Nexus Bills{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your billing activities{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Bills Card -->
+        <div class="card p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-gradient-to-r from-neon to-electric mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400">Total Bills</p>
+                    <p class="text-2xl font-bold text-white" id="totalBills">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drafts Card -->
+        <div class="card p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-gradient-to-r from-electric to-purple-500 mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                        <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400">Drafts</p>
+                    <p class="text-2xl font-bold text-white" id="totalDrafts">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kacha Bills Card -->
+        <div class="card p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400">Kacha Bills</p>
+                    <p class="text-2xl font-bold text-white" id="totalKachaBills">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pakka Bills Card -->
+        <div class="card p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-gradient-to-r from-green-500 to-teal-500 mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-400">Pakka Bills</p>
+                    <p class="text-2xl font-bold text-white" id="totalPakkaBills">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Recent Activity -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4 text-neon flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+                Recent Activity
+            </h3>
+            <div class="space-y-4" id="recentActivity">
+                <div class="text-center py-8 text-gray-500">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-neon mx-auto mb-3"></div>
+                    <p>Loading recent activity...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trends -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4 text-glow flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
+                </svg>
+                Monthly Trends
+            </h3>
+            <div id="monthlyTrends">
+                <div class="text-center py-8 text-gray-500">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-glow mx-auto mb-3"></div>
+                    <p>Loading trends...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Quick Actions -->
+         <a href="{% url 'create:kacha_bills' %}" class="p-4 border border-mystic rounded-lg hover:border-yellow-500 transition-colors group">
+            <div class="flex items-center">
+                <div class="p-2 rounded-lg bg-yellow-500/20 mr-3 group-hover:bg-yellow-500/30 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white group-hover:text-yellow-500 transition">Manage Kacha Bills</h4>
+                    <p class="text-sm text-gray-400">Convert to pakka bills</p>
+                </div>
+            </div>
+        </a>
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4 text-electric flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Quick Actions
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a href="{% url 'create:kacha_bill' %}" class="p-4 border border-mystic rounded-lg hover:border-neon transition-colors group">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-electric/20 mr-3 group-hover:bg-electric/30 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-electric" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white group-hover:text-neon transition">Create Kacha Bill</h4>
+                            <p class="text-sm text-gray-400">Initial deal negotiation</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{% url 'create:pakka_bill' %}" class="p-4 border border-mystic rounded-lg hover:border-glow transition-colors group">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-glow/20 mr-3 group-hover:bg-glow/30 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-glow" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white group-hover:text-glow transition">Create Pakka Bill</h4>
+                            <p class="text-sm text-gray-400">Final official bill</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{% url 'create:drafts' %}" class="p-4 border border-mystic rounded-lg hover:border-electric transition-colors group">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-electric/20 mr-3 group-hover:bg-electric/30 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-electric" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                                <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white group-hover:text-electric transition">Manage Drafts</h4>
+                            <p class="text-sm text-gray-400">Continue working on drafts</p>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'create:pakka_bills' %}" class="p-4 border border-mystic rounded-lg hover:border-green-500 transition-colors group">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-green-500/20 mr-3 group-hover:bg-green-500/30 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white group-hover:text-green-500 transition">Manage Pakka Bills</h4>
+                            <p class="text-sm text-gray-400">View final bills</p>
+                        </div>
+                    </div>
+                </a>
+
+
+                <div class="p-4 border border-mystic rounded-lg hover:border-neon transition-colors group cursor-not-allowed opacity-60">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-neon/20 mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">Customer Management</h4>
+                            <p class="text-sm text-gray-400">Coming soon</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Customers -->
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4 text-neon flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                </svg>
+                Top Customers
+            </h3>
+            <div id="topCustomers">
+                <div class="text-center py-8 text-gray-500">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-neon mx-auto mb-3"></div>
+                    <p>Loading customer data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

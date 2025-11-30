@@ -1,0 +1,240 @@
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nexus Bill Generator{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'midnight': '#0f172a',
+                        'twilight': '#1e293b',
+                        'mystic': '#334155',
+                        'neon': '#06b6d4',
+                        'electric': '#8b5cf6',
+                        'glow': '#22d3ee',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Using a darker gradient for a sleeker feel */
+            background-color: #0f172a; 
+            min-height: 100vh;
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .sidebar-item:hover {
+            background-color: rgba(6, 182, 212, 0.1);
+        }
+        
+        .sidebar-item.active {
+            background-color: rgba(6, 182, 212, 0.15);
+            /* Using neon color for the active border */
+            border-left: 3px solid var(--tw-color-neon, #06b6d4);
+        }
+        
+        /* Removed the dot, as it can feel a bit cluttered */
+        
+        .card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .glow-text {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+        }
+        
+        .logo-glow {
+            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.7));
+        }
+        
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* --- IMPROVEMENT ---
+           This is the key fix. Your main content uses `lg:ml-64`, which
+           has a breakpoint at 1024px. Your old CSS used 768px.
+           This change matches the sidebar's mobile behavior to
+           Tailwind's 'lg' breakpoint (1024px), eliminating any gaps.
+        */
+        @media (max-width: 1023px) { /* Was 768px, now matches 'lg:' */
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div id="sidebar-overlay" class="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden hidden"></div>
+
+    <div class="lg:hidden fixed top-4 left-4 z-50">
+        <button id="mobile-menu-toggle" class="p-2 rounded-lg bg-twilight border border-mystic shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="sidebar fixed inset-y-0 left-0 z-40 w-64 bg-midnight border-r border-mystic overflow-y-auto">
+        <div class="p-6 flex items-center justify-center">
+            <div class="flex items-center space-x-2">
+                <div class="logo-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold glow-text">Nexus Bills</h1>
+            </div>
+        </div>
+
+        <!-- In base.html navigation section -->
+        <nav class="mt-8">
+            <div class="px-4 space-y-2">
+                <a href="{% url 'create:dashboard' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    Dashboard
+                </a>
+                
+                <!-- Kacha Bill Generator -->
+                <a href="{% url 'create:kacha_bill' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="kacha-bill">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-electric" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    Kacha Bill Generator
+                </a>
+                
+                <!-- Pakka Bill Generator -->
+                <a href="{% url 'create:pakka_bill' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="pakka-bill">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-glow" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Pakka Bill Generator
+                </a>
+                
+                <!-- Kacha Bills -->
+                <a href="{% url 'create:kacha_bills' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="kacha-bills">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                    </svg>
+                    Kacha Bills
+                </a>
+                <!-- pakka Bills -->
+                <a href="{% url 'create:pakka_bills' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="pakka-bills">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Pakka Bills
+                </a>
+
+                
+                <!-- Drafts -->
+                <a href="{% url 'create:drafts' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="drafts">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                        <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                    Drafts
+                </a>
+            </div>
+        </nav>
+
+        <div class="absolute bottom-0 w-full p-4 border-t border-mystic">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-neon to-electric flex items-center justify-center">
+                    <span class="font-bold text-white">SB</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">{% block business_name %}Your Business{% endblock %}</p>
+                    <p class="text-xs text-gray-400 truncate">{% block business_email %}business@example.com{% endblock %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:ml-64 min-h-screen flex flex-col">
+        <header class="bg-twilight/80 backdrop-blur-md border-b border-mystic py-4 sticky top-0 z-20 pl-16 pr-4 sm:pr-6 lg:px-6">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <h2 class="text-xl font-semibold glow-text truncate">{% block page_title %}Page name{% endblock %}</h2>
+                    <p class="text-sm text-gray-400 mt-1 truncate">{% block page_subtitle %}About the page{% endblock %}</p>
+                </div>
+                
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search..." class="pl-8 sm:pl-10 pr-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent w-32 sm:w-48 lg:w-64 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-2 sm:left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+
+                    <button class="relative p-2 rounded-lg bg-mystic hover:bg-opacity-80 transition flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                        </svg>
+                        <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-4 sm:p-6 lg:p-8 flex-grow">
+            {% block content %}
+            {% comment %} <div class="card p-6">
+                <h3 class="text-lg font-semibold text-white">Welcome!</h3>
+                <p class="text-gray-300 mt-2">This is the default content area. Create a new template that extends this file and overrides the `{% templatetag openblock %} content {% templatetag closeblock %}` block.</p>
+            </div> {% endcomment %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+    // CSRF token helper function
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        return csrfToken ? csrfToken.value : '';
+    }
+    </script>
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>
