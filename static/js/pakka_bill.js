@@ -178,11 +178,71 @@ document.addEventListener('DOMContentLoaded', function() {
     function downloadPakkaBill() {
         const billData = collectBillData();
         if (validateBill(billData)) {
-            // For now, show an alert. You can implement PDF generation later
-            showAppAlert('Pakka Bill PDF download feature will be implemented soon!', 'info');
+            // Generate a temporary bill number for preview
+            billData.billNumber = `PAKKA-PREVIEW-${Date.now().toString().substring(8)}`;
             
-            // Future implementation:
-            // generatePDF(billData);
+            // Add company details for the PDF
+            addCompanyDetailsToBillData(billData).then(() => {
+                downloadPakkaBillPDF(billData);
+            }).catch(error => {
+                showAppAlert('Error preparing bill data: ' + error.message, 'error');
+            });
+        }
+    }
+
+    async function addCompanyDetailsToBillData(billData) {
+        try {
+            const response = await fetch('/api/get-company-details/');
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                const company = result.company;
+                billData.firmName = company.companyName;
+                billData.gstNumber = company.gstNumber;
+                
+                // Build seller address from company details
+                const addressParts = [];
+                if (company.address) addressParts.push(company.address);
+                if (company.city || company.state || company.pincode) {
+                    const cityStatePincode = [company.city, company.state, company.pincode]
+                        .filter(part => part)
+                        .join(', ');
+                    if (cityStatePincode) addressParts.push(cityStatePincode);
+                }
+                billData.sellerAddress = addressParts.join('\n');
+                
+                // Add additional company details if available
+                if (company.phone) billData.sellerPhone = company.phone;
+                if (company.email) billData.sellerEmail = company.email;
+                if (company.bankName) billData.bankName = company.bankName;
+                if (company.accountNumber) billData.accountNumber = company.accountNumber;
+                if (company.ifscCode) billData.ifscCode = company.ifscCode;
+            } else {
+                throw new Error('Company details not found');
+            }
+        } catch (error) {
+            console.error('Error loading company details:', error);
+            // Use placeholder values if company details not available
+            billData.firmName = billData.firmName || 'Your Company Name';
+            billData.gstNumber = billData.gstNumber || 'GSTIN Not Available';
+            billData.sellerAddress = billData.sellerAddress || 'Company Address Not Set';
+        }
+    }
+
+    async function downloadPakkaBillPDF(billData) {
+        try {
+            showAppAlert('Generating PDF...', 'info');
+            
+            // Check if PDFGenerator is available
+            if (!window.PDFGenerator || typeof window.PDFGenerator.generatePakkaBillPDF !== 'function') {
+                throw new Error('PDF generator is not available. Please refresh the page and try again.');
+            }
+            
+            await window.PDFGenerator.generatePakkaBillPDF(billData);
+            showAppAlert('Pakka Bill PDF downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            showAppAlert(`Error generating PDF: ${error.message}`, 'error');
         }
     }
 

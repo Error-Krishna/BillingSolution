@@ -286,21 +286,42 @@ document.addEventListener('DOMContentLoaded', function() {
     function downloadCurrentBill() {
         const billData = collectBillData();
         if (validateBill(billData)) {
-            // For now, show an alert. You can implement PDF generation later
-            showAppAlert('PDF download feature will be implemented soon!', 'info');
-            
-            // Future implementation:
-            // generatePDF(billData);
+            // Add bill number if available
+            if (currentDraftId) {
+                billData.billNumber = `DRAFT-${currentDraftId.substring(0, 8)}`;
+            }
+            downloadKachaBillPDF(billData);
         }
     }
 
     function downloadCurrentBillPDF() {
         const billData = collectBillData();
-        // For now, show an alert. You can implement PDF generation later
-        showAppAlert('PDF download feature will be implemented soon!', 'info');
-        
-        // Future implementation:
-        // generatePDF(billData);
+        // Add bill number if available from view mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewId = urlParams.get('view');
+        if (viewId) {
+            billData.billNumber = `KACHA-${viewId.substring(0, 8)}`;
+        } else if (currentDraftId) {
+            billData.billNumber = `DRAFT-${currentDraftId.substring(0, 8)}`;
+        }
+        downloadKachaBillPDF(billData);
+    }
+
+    async function downloadKachaBillPDF(billData) {
+        try {
+            showAppAlert('Generating PDF...', 'info');
+            
+            // Check if PDFGenerator is available
+            if (!window.PDFGenerator || typeof window.PDFGenerator.generateKachaBillPDF !== 'function') {
+                throw new Error('PDF generator is not available. Please refresh the page and try again.');
+            }
+            
+            await window.PDFGenerator.generateKachaBillPDF(billData);
+            showAppAlert('Kacha Bill PDF downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            showAppAlert(`Error generating PDF: ${error.message}`, 'error');
+        }
     }
 
     function collectBillData() {
@@ -420,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAppAlert(message, type = 'success') {
-        // You can replace this with a nicer toast notification if you have one
+        // Use the global showAppAlert function if available, otherwise use basic alert
         if (window.showAppAlert) {
             window.showAppAlert(message, type);
         } else {

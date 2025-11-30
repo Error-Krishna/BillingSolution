@@ -92,19 +92,53 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/'/g, "&#039;");
     }
 
-    window.viewPakkaBill = function(pakkaId) {
-        // For now, show an alert. You can implement PDF generation later
-        showAppAlert('Pakka Bill PDF view feature will be implemented soon!', 'info');
-        
-        // Future implementation:
-        // window.open('/api/view-pakka-bill-pdf/' + pakkaId + '/', '_blank');
+    window.viewPakkaBill = async function(pakkaId) {
+        try {
+            showAppAlert('Loading bill data...', 'info');
+            
+            // Check if PDFGenerator is available
+            if (!window.PDFGenerator || typeof window.PDFGenerator.generatePakkaBillPDF !== 'function') {
+                throw new Error('PDF generator is not available. Please refresh the page and try again.');
+            }
+            
+            // Fetch the bill data
+            const response = await fetch(`/api/get-pakka-bill/${pakkaId}/`);
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                await window.PDFGenerator.generatePakkaBillPDF(result.bill);
+                showAppAlert('Pakka Bill PDF generated successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to load bill data');
+            }
+        } catch (error) {
+            console.error('Error viewing Pakka Bill PDF:', error);
+            showAppAlert(`Error: ${error.message}`, 'error');
+        }
     };
 
-    window.downloadPakkaBill = function(pakkaId) {
-        // For now, show an alert. You can implement PDF generation later
-        showAppAlert('Pakka Bill PDF download feature will be implemented soon!', 'info');
-        
-        // Future implementation:
-        // window.location.href = '/api/download-pakka-bill/' + pakkaId + '/';
+    window.downloadPakkaBill = async function(pakkaId) {
+        try {
+            showAppAlert('Loading bill data...', 'info');
+            
+            // Check if PDFGenerator is available
+            if (!window.PDFGenerator || typeof window.PDFGenerator.generatePakkaBillPDF !== 'function') {
+                throw new Error('PDF generator is not available. Please refresh the page and try again.');
+            }
+            
+            // Fetch the bill data
+            const response = await fetch(`/api/get-pakka-bill/${pakkaId}/`);
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                await window.PDFGenerator.generatePakkaBillPDF(result.bill);
+                showAppAlert('Pakka Bill PDF downloaded successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to load bill data');
+            }
+        } catch (error) {
+            console.error('Error downloading Pakka Bill PDF:', error);
+            showAppAlert(`Error: ${error.message}`, 'error');
+        }
     };
 });

@@ -159,12 +159,29 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/kacha-bill/?view=' + kachaId;
     };
 
-    window.downloadKachaBillPDF = function(kachaId) {
-        // For now, show an alert. You can implement PDF generation later
-        showAppAlert('Kacha Bill PDF download feature will be implemented soon!', 'info');
-        
-        // Future implementation:
-        // window.location.href = '/api/download-kacha-bill/' + kachaId + '/';
+    window.downloadKachaBillPDF = async function(kachaId) {
+        try {
+            showAppAlert('Loading bill data...', 'info');
+            
+            // Check if PDFGenerator is available
+            if (!window.PDFGenerator || typeof window.PDFGenerator.generateKachaBillPDF !== 'function') {
+                throw new Error('PDF generator is not available. Please refresh the page and try again.');
+            }
+            
+            // Fetch the bill data
+            const response = await fetch(`/api/get-kacha-bill/${kachaId}/`);
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                await window.PDFGenerator.generateKachaBillPDF(result.bill);
+                showAppAlert('Kacha Bill PDF downloaded successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to load bill data');
+            }
+        } catch (error) {
+            console.error('Error downloading Kacha Bill PDF:', error);
+            showAppAlert(`Error: ${error.message}`, 'error');
+        }
     };
 
     window.deleteKachaBill = async function(kachaId) {

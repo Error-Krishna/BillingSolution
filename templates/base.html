@@ -6,6 +6,14 @@
     <title>{% block title %}Nexus Bill Generator{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+        <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        
+    <script>
+        // Make jsPDF available globally
+        window.jsPDF = window.jspdf.jsPDF;
+    </script>
     
     <script>
         tailwind.config = {
@@ -227,7 +235,10 @@
         </main>
     </div>
 
+    <!-- Load PDF Utils first, then other scripts -->
+    <script src="{% static 'js/pdf-utils.js' %}"></script>
     <script src="{% static 'js/app.js' %}"></script>
+    
     <script>
     // CSRF token helper function
     function getCSRFToken() {

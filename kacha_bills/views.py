@@ -7,6 +7,7 @@ from core.mongo_client import get_kacha_bills_collection, get_pakka_bills_collec
 from bson.objectid import ObjectId
 from datetime import datetime
 
+
 def kacha_bill_view(request):
     """
     Kacha Bill Generator - Initial bill for deal negotiation
