@@ -2,27 +2,30 @@ from datetime import datetime
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 import json
 from core.mongo_client import get_company_details_collection
 
+@login_required
 def onboarding_view(request):
     """
     Onboarding view for new users to set up company details
     """
-    # Check if company details already exist
+    # Check if company details already exist for this user
     company_collection = get_company_details_collection()
-    existing_company = company_collection.find_one()
+    existing_company = company_collection.find_one({'user_id': str(request.user.id)})
     
-    if existing_company:
-        # Company details already set, redirect to dashboard
+    # If company details exist and onboarding is complete, redirect to dashboard
+    if existing_company and existing_company.get('onboarding_complete'):
         return redirect('dashboard:dashboard')
     
     return render(request, 'onboarding/onboarding.html')
 
 @csrf_exempt
+@login_required
 def save_company_details(request):
     """
-    Save company details from onboarding
+    Save company details from onboarding (user-specific)
     """
     if request.method == 'POST':
         try:
@@ -39,16 +42,12 @@ def save_company_details(request):
             
             company_collection = get_company_details_collection()
             
-            # Check if company details already exist
-            existing_company = company_collection.find_one()
-            if existing_company:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Company details already set up'
-                }, status=400)
+            # Check if company details already exist for this user
+            existing_company = company_collection.find_one({'user_id': str(request.user.id)})
             
-            # Prepare company data
+            # Prepare company data with user_id
             company_data = {
+                'user_id': str(request.user.id),
                 'companyName': data['companyName'],
                 'gstNumber': data['gstNumber'],
                 'address': data['address'],
@@ -61,16 +60,27 @@ def save_company_details(request):
                 'bankName': data.get('bankName', ''),
                 'accountNumber': data.get('accountNumber', ''),
                 'ifscCode': data.get('ifscCode', ''),
+                'onboarding_complete': True,  # Mark onboarding as complete
+                'onboarding_completed_at': datetime.now().isoformat(),
                 'created_at': datetime.now().isoformat()
             }
             
-            # Save to database
-            result = company_collection.insert_one(company_data)
+            if existing_company:
+                # Update existing company details
+                result = company_collection.update_one(
+                    {'user_id': str(request.user.id)},
+                    {'$set': company_data}
+                )
+                message = 'Company details updated successfully!'
+            else:
+                # Insert new company details
+                result = company_collection.insert_one(company_data)
+                message = 'Company details saved successfully!'
             
             return JsonResponse({
                 'status': 'success',
-                'message': 'Company details saved successfully!',
-                'company_id': str(result.inserted_id)
+                'message': message,
+                'onboarding_complete': True
             })
             
         except json.JSONDecodeError as e:
@@ -89,24 +99,26 @@ def save_company_details(request):
         'message': 'Invalid request method'
     }, status=405)
 
+@login_required
 def check_company_setup(request):
     """
-    Check if company details are set up
+    Check if company details are set up for current user
     """
     company_collection = get_company_details_collection()
-    existing_company = company_collection.find_one()
+    existing_company = company_collection.find_one({'user_id': str(request.user.id)})
     
     return JsonResponse({
         'status': 'success',
-        'company_setup': bool(existing_company)
+        'company_setup': bool(existing_company and existing_company.get('onboarding_complete'))
     })
 
+@login_required
 def get_company_details(request):
     """
-    Get company details for use in bills
+    Get company details for current user
     """
     company_collection = get_company_details_collection()
-    company_details = company_collection.find_one()
+    company_details = company_collection.find_one({'user_id': str(request.user.id)})
     
     if company_details:
         # Remove MongoDB _id for JSON serialization

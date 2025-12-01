@@ -1,4 +1,3 @@
-# config/settings/base.py
 import os
 from pathlib import Path
 from decouple import config
@@ -9,6 +8,11 @@ SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = []
 
+# Authentication settings
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -16,12 +20,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts',  # New app for authentication
     'dashboard',
     'kacha_bills',
     'pakka_bills',
     'drafts',
     'core',
     'onboarding',
+    'user_profile',
 ]
 
 MIDDLEWARE = [
@@ -33,6 +39,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'onboarding.middleware.OnboardingMiddleware',
+    'accounts.middleware.UserDataMiddleware',  # New middleware
 ]
 
 ROOT_URLCONF = 'config.urls'

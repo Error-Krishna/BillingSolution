@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile Management - Nexus Bills{% endblock %}
+
+{% block page_title %}Profile Management{% endblock %}
+{% block page_subtitle %}Manage your company details and personal information{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Success/Error Messages -->
+    <div id="message-container" class="mb-6"></div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - User Profile -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- User Information Card -->
+            <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-neon mb-4">User Information</h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="h-16 w-16 rounded-full bg-gradient-to-r from-neon to-electric flex items-center justify-center">
+                            <span class="text-xl font-bold text-white" id="user-initials">
+                                {{ user.username|slice:":2"|upper }}
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-white" id="user-fullname">
+                                {% if user.first_name and user.last_name %}
+                                    {{ user.first_name }} {{ user.last_name }}
+                                {% else %}
+                                    {{ user.username }}
+                                {% endif %}
+                            </h4>
+                            <p class="text-sm text-gray-400" id="user-email">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Member since:</span>
+                            <span class="text-white" id="member-since">
+                                {{ user.date_joined|date:"M j, Y" }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Last login:</span>
+                            <span class="text-white" id="last-login">
+                                {% if user.last_login %}
+                                    {{ user.last_login|date:"M j, Y g:i A" }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-neon mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <button onclick="showSection('company')" 
+                            class="w-full flex items-center justify-between p-3 rounded-lg bg-mystic hover:bg-opacity-80 transition">
+                        <span>Edit Company Details</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    
+                    <button onclick="showSection('personal')" 
+                            class="w-full flex items-center justify-between p-3 rounded-lg bg-mystic hover:bg-opacity-80 transition">
+                        <span>Personal Information</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    
+                    <button onclick="showSection('password')" 
+                            class="w-full flex items-center justify-between p-3 rounded-lg bg-mystic hover:bg-opacity-80 transition">
+                        <span>Change Password</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Forms -->
+        <div class="lg:col-span-2">
+            <!-- Company Details Form -->
+            <div id="company-section" class="card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-neon mb-6">Company Details</h3>
+                
+                <form id="company-form" class="space-y-6">
+                    <!-- Basic Information -->
+                    <div>
+                        <h4 class="text-md font-medium text-white mb-4">Basic Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Company Name *</label>
+                                <input type="text" name="companyName" required
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">GST Number *</label>
+                                <input type="text" name="gstNumber" required
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Information -->
+                    <div>
+                        <h4 class="text-md font-medium text-white mb-4">Address Information</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Address *</label>
+                                <textarea name="address" rows="3" required
+                                          class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white resize-none"></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">City *</label>
+                                    <input type="text" name="city" required
+                                           class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">State *</label>
+                                    <input type="text" name="state" required
+                                           class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Pincode *</label>
+                                    <input type="text" name="pincode" required
+                                           class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div>
+                        <h4 class="text-md font-medium text-white mb-4">Contact Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                                <input type="tel" name="phone"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                <input type="email" name="email"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Website</label>
+                                <input type="url" name="website"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank Information -->
+                    <div>
+                        <h4 class="text-md font-medium text-white mb-4">Bank Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Bank Name</label>
+                                <input type="text" name="bankName"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Account Number</label>
+                                <input type="text" name="accountNumber"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">IFSC Code</label>
+                                <input type="text" name="ifscCode"
+                                       class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" 
+                                class="btn-primary px-6 py-2 rounded-lg font-medium transition-all flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            Update Company Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Personal Information Form -->
+            <div id="personal-section" class="card rounded-xl p-6 hidden">
+                <h3 class="text-lg font-semibold text-neon mb-6">Personal Information</h3>
+                
+                <form id="personal-form" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+                            <input type="text" name="first_name" id="first-name"
+                                   class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                            <input type="text" name="last_name" id="last-name"
+                                   class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Email Address *</label>
+                        <input type="email" name="email" id="user-email-input" required
+                               class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                    </div>
+                    
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" 
+                                class="btn-primary px-6 py-2 rounded-lg font-medium transition-all flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            Update Personal Information
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Change Password Form -->
+            <div id="password-section" class="card rounded-xl p-6 hidden">
+                <h3 class="text-lg font-semibold text-neon mb-6">Change Password</h3>
+                
+                <form id="password-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Current Password *</label>
+                        <input type="password" name="current_password" required
+                               class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">New Password *</label>
+                            <input type="password" name="new_password" required
+                                   class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Confirm New Password *</label>
+                            <input type="password" name="confirm_password" required
+                                   class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-mystic/30 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-neon mb-2">Password Requirements</h4>
+                        <ul class="text-xs text-gray-400 space-y-1">
+                            <li>• At least 8 characters long</li>
+                            <li>• Include uppercase and lowercase letters</li>
+                            <li>• Include numbers and special characters</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" 
+                                class="btn-primary px-6 py-2 rounded-lg font-medium transition-all flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                            Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/user_profile.js' %}"></script>
+{% endblock %}

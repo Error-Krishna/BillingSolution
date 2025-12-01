@@ -1,4 +1,4 @@
-# core/mongo_client.py
+# core/mongo_client.py - Updated for multi-user support
 import logging
 from decouple import config
 from pymongo import MongoClient, errors
@@ -63,24 +63,27 @@ def get_pakka_bills_collection(db_name: str = "DigitalMemo", collection_name: st
     db = get_db(db_name)
     return db[collection_name]
 
-def get_next_sequence_value(sequence_name, db_name="DigitalMemo"):
+def get_next_sequence_value(sequence_name, user_id, db_name="DigitalMemo"):
     """
-    Get the next sequence value for automatic numbering
+    Get the next sequence value for automatic numbering (user-specific)
     """
     db = get_db(db_name)
     counters = db['counters']
     
+    # Create user-specific sequence name
+    user_sequence_name = f"{user_id}_{sequence_name}"
+    
     result = counters.find_one_and_update(
-        {'_id': sequence_name},
+        {'_id': user_sequence_name},
         {'$inc': {'sequence_value': 1}},
         upsert=True,
         return_document=True
     )
     return result['sequence_value']
 
-def get_next_bill_number(bill_type, db_name="DigitalMemo"):
+def get_next_bill_number(bill_type, user_id, db_name="DigitalMemo"):
     """
-    Get next bill number based on type
+    Get next bill number based on type (user-specific)
     """
     prefix = {
         'kacha': 'KACHA',
@@ -89,19 +92,8 @@ def get_next_bill_number(bill_type, db_name="DigitalMemo"):
     }.get(bill_type, 'BILL')
     
     sequence_name = f"{bill_type}_bill_number"
-    next_number = get_next_sequence_value(sequence_name, db_name)
+    next_number = get_next_sequence_value(sequence_name, user_id, db_name)
     return f"{prefix}-{next_number:03d}"
-
-def close_client():
-    """
-    Close the global client (call on app shutdown if needed).
-    """
-    global client
-    if client:
-        client.close()
-        client = None
-        logger.info("MongoDB client closed.")
-
 
 def get_company_details_collection(db_name: str = "DigitalMemo", collection_name: str = "company_details"):
     """
@@ -109,3 +101,24 @@ def get_company_details_collection(db_name: str = "DigitalMemo", collection_name
     """
     db = get_db(db_name)
     return db[collection_name]
+
+# User-specific query helpers
+def get_user_drafts(user_id):
+    """Get drafts for specific user"""
+    collection = get_drafts_collection()
+    return collection.find({'user_id': user_id})
+
+def get_user_kacha_bills(user_id):
+    """Get kacha bills for specific user"""
+    collection = get_kacha_bills_collection()
+    return collection.find({'user_id': user_id})
+
+def get_user_pakka_bills(user_id):
+    """Get pakka bills for specific user"""
+    collection = get_pakka_bills_collection()
+    return collection.find({'user_id': user_id})
+
+def get_user_company_details(user_id):
+    """Get company details for specific user"""
+    collection = get_company_details_collection()
+    return collection.find_one({'user_id': user_id})

@@ -2,6 +2,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const companyForm = document.getElementById('companySetupForm');
     
+    // Check if user has already completed onboarding
+    checkOnboardingStatus();
+    
     companyForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -23,6 +26,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         await saveCompanyDetails(companyData);
     });
+    
+    async function checkOnboardingStatus() {
+        try {
+            const response = await fetch('/api/check-company-setup/');
+            const result = await response.json();
+            
+            if (response.ok && result.company_setup) {
+                // User has already completed onboarding, redirect to dashboard
+                window.location.href = '/dashboard/';
+            }
+        } catch (error) {
+            console.error('Error checking onboarding status:', error);
+        }
+    }
     
     async function saveCompanyDetails(companyData) {
         try {
@@ -50,10 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && result.status === 'success') {
                 showAppAlert('Company details saved successfully! Redirecting to dashboard...', 'success');
                 
-                // Redirect to dashboard after short delay
+                // Force redirect to dashboard after short delay
                 setTimeout(() => {
                     window.location.href = '/dashboard/';
-                }, 2000);
+                }, 1500);
             } else {
                 throw new Error(result.message || 'Failed to save company details');
             }

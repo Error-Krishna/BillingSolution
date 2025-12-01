@@ -1,15 +1,21 @@
-# core/utils.py
+# core/utils.py - Updated for multi-user
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from .mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection
 
-def calculate_collection_totals(collection):
+def calculate_collection_totals(collection, user_id=None):
     """
     Calculate total amount and count for a collection with robust error handling
     """
     try:
+        # Build query with user filter if provided
+        query = {}
+        if user_id:
+            query['user_id'] = user_id
+            
         # Try aggregation pipeline first (more efficient)
         pipeline = [
+            {'$match': query},
             {
                 '$group': {
                     '_id': None,
@@ -34,7 +40,11 @@ def calculate_collection_totals(collection):
             # Fall back to manual calculation
             total_amount = 0
             count = 0
-            for doc in collection.find({}, {'totalAmount': 1}):
+            query = {}
+            if user_id:
+                query['user_id'] = user_id
+                
+            for doc in collection.find(query, {'totalAmount': 1}):
                 total_amount += doc.get('totalAmount', 0)
                 count += 1
             return {'amount': total_amount, 'count': count}
@@ -42,7 +52,7 @@ def calculate_collection_totals(collection):
             print(f"Manual calculation also failed: {e2}")
             return {'amount': 0, 'count': 0}
 
-def get_monthly_trends():
+def get_monthly_trends(user_id=None):
     """
     Get monthly trends for the last 6 months with error handling
     """
@@ -58,21 +68,30 @@ def get_monthly_trends():
                 
                 month_str = month_start.strftime('%b %Y')
                 
+                # Build user query
+                user_query = {}
+                if user_id:
+                    user_query['user_id'] = user_id
+                
                 # Kacha bills for the month
-                kacha_count = kacha_collection.count_documents({
+                kacha_query = {
+                    **user_query,
                     'billDate': {
                         '$gte': month_start.strftime('%Y-%m-%d'),
                         '$lte': month_end.strftime('%Y-%m-%d')
                     }
-                })
+                }
+                kacha_count = kacha_collection.count_documents(kacha_query)
                 
                 # Pakka bills for the month
-                pakka_count = pakka_collection.count_documents({
+                pakka_query = {
+                    **user_query,
                     'billDate': {
                         '$gte': month_start.strftime('%Y-%m-%d'),
                         '$lte': month_end.strftime('%Y-%m-%d')
                     }
-                })
+                }
+                pakka_count = pakka_collection.count_documents(pakka_query)
                 
                 monthly_data.append({
                     'month': month_str,
@@ -108,7 +127,7 @@ def get_monthly_trends():
     
     return monthly_data
 
-def get_top_customers():
+def get_top_customers(user_id=None):
     """
     Get top customers by bill count with comprehensive error handling
     """
@@ -117,12 +136,17 @@ def get_top_customers():
         kacha_collection = get_kacha_bills_collection()
         pakka_collection = get_pakka_bills_collection()
         
+        # Build user query
+        user_query = {}
+        if user_id:
+            user_query['user_id'] = user_id
+        
         # Get kacha bills
-        kacha_bills = list(kacha_collection.find({}, {'customerName': 1}))
+        kacha_bills = list(kacha_collection.find(user_query, {'customerName': 1}))
         all_bills.extend(kacha_bills)
         
         # Get pakka bills
-        pakka_bills = list(pakka_collection.find({}, {'customerName': 1}))
+        pakka_bills = list(pakka_collection.find(user_query, {'customerName': 1}))
         all_bills.extend(pakka_bills)
         
         # Count customers with error handling

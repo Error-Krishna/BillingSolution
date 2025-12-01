@@ -6,7 +6,7 @@
     <title>{% block title %}Nexus Bill Generator{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-        <!-- PDF Generation Libraries -->
+    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         
@@ -26,6 +26,8 @@
                         'neon': '#06b6d4',
                         'electric': '#8b5cf6',
                         'glow': '#22d3ee',
+                        'deep-space': '#020617',
+                        'space-black': '#0f172a'
                     }
                 }
             }
@@ -36,7 +38,6 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            /* Using a darker gradient for a sleeker feel */
             background-color: #0f172a; 
             min-height: 100vh;
         }
@@ -60,6 +61,7 @@
             .main-content-expanded {
                 margin-left: 0 !important;
             }
+        }
         
         .sidebar-item {
             transition: all 0.3s ease;
@@ -72,11 +74,8 @@
         
         .sidebar-item.active {
             background-color: rgba(6, 182, 212, 0.15);
-            /* Using neon color for the active border */
-            border-left: 3px solid var(--tw-color-neon, #06b6d4);
+            border-left: 3px solid #06b6d4;
         }
-        
-        /* Removed the dot, as it can feel a bit cluttered */
         
         .card {
             background: rgba(30, 41, 59, 0.7);
@@ -112,13 +111,7 @@
             transition: transform 0.3s ease-in-out;
         }
         
-        /* --- IMPROVEMENT ---
-           This is the key fix. Your main content uses `lg:ml-64`, which
-           has a breakpoint at 1024px. Your old CSS used 768px.
-           This change matches the sidebar's mobile behavior to
-           Tailwind's 'lg' breakpoint (1024px), eliminating any gaps.
-        */
-        @media (max-width: 1023px) { /* Was 768px, now matches 'lg:' */
+        @media (max-width: 1023px) {
             .sidebar {
                 transform: translateX(-100%);
             }
@@ -126,6 +119,19 @@
             .sidebar.open {
                 transform: translateX(0);
             }
+        }
+
+        .user-info-dropdown {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .user-info-container:hover .user-info-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -153,7 +159,7 @@
             </div>
         </div>
 
-        <!-- In base.html navigation section -->
+        <!-- Navigation Section -->
         <nav class="mt-8">
             <div class="px-4 space-y-2">
                 <a href="{% url 'dashboard:dashboard' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="dashboard">
@@ -186,7 +192,8 @@
                     </svg>
                     Kacha Bills
                 </a>
-                <!-- pakka Bills -->
+                
+                <!-- Pakka Bills -->
                 <a href="{% url 'pakka_bills:pakka_bills' %}" class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-lg" data-page="pakka-bills">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -206,24 +213,62 @@
             </div>
         </nav>
 
+        <!-- User Section in Sidebar - Dynamic -->
         <div class="absolute bottom-0 w-full p-4 border-t border-mystic">
-            <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-neon to-electric flex items-center justify-center user-avatar">
-                    <span class="font-bold text-white business-initials"></span>
+            {% if user.is_authenticated %}
+            <div class="user-info-container relative">
+                <div class="flex items-center space-x-3 cursor-pointer">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-neon to-electric flex items-center justify-center user-avatar">
+                        <span class="font-bold text-white business-initials">{{ user.username|slice:":2"|upper }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate business-name">{{ user.username }}</p>
+                        <p class="text-xs text-gray-400 truncate business-email">{{ user.email }}</p>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium truncate business-name"></p>
-                    <p class="text-xs text-gray-400 truncate business-email"></p>
+                
+                <!-- Dropdown Menu -->
+                <div class="user-info-dropdown absolute bottom-full left-0 right-0 mb-2 bg-space-black border border-mystic rounded-lg shadow-lg py-1 z-50">
+                    <a href="{% url 'user_profile:profile' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-mystic hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        Profile
+                    </a>
+                    <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-mystic hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+                        </svg>
+                        Sign out
+                    </a>
                 </div>
             </div>
+            {% else %}
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-neon to-electric flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">Guest User</p>
+                    <p class="text-xs text-gray-400 truncate">
+                        <a href="{% url 'accounts:login' %}" class="text-neon hover:text-electric transition-colors">Sign in</a> to access features
+                    </p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <div class="lg:ml-64 min-h-screen flex flex-col">
-        <!-- In the header section of base.html -->
+        <!-- Header Section - Removed user info from here -->
         <header class="bg-twilight/80 backdrop-blur-md border-b border-mystic py-4 sticky top-0 z-20 pl-16 pr-4 sm:pr-6 lg:px-6">
             <div class="flex items-center justify-between">
-                <!-- Add desktop sidebar toggle button -->
+                <!-- Desktop sidebar toggle and page info -->
                 <div class="flex items-center">
                     <button id="desktop-sidebar-toggle" class="hidden lg:flex items-center justify-center p-2 rounded-lg bg-mystic hover:bg-opacity-80 transition mr-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,11 +276,12 @@
                         </svg>
                     </button>
                     <div class="min-w-0">
-                        <h2 class="text-xl font-semibold glow-text truncate">{% block page_title %}Page name{% endblock %}</h2>
-                        <p class="text-sm text-gray-400 mt-1 truncate">{% block page_subtitle %}About the page{% endblock %}</p>
+                        <h2 class="text-xl font-semibold glow-text truncate">{% block page_title %}Nexus Bills Dashboard{% endblock %}</h2>
+                        <p class="text-sm text-gray-400 mt-1 truncate">{% block page_subtitle %}Manage your bills efficiently{% endblock %}</p>
                     </div>
                 </div>
                 
+                <!-- Search and notifications only - no user info -->
                 <div class="flex items-center space-x-2 sm:space-x-4">
                     <div class="relative">
                         <input type="text" placeholder="Search..." class="pl-8 sm:pl-10 pr-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent w-32 sm:w-48 lg:w-64 transition-all">
@@ -250,21 +296,27 @@
                         </svg>
                         <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                     </button>
+
+                    <!-- Authentication buttons for non-authenticated users (only show when not logged in) -->
+                    {% if not user.is_authenticated %}
+                    <div class="hidden sm:flex items-center space-x-2">
+                        <a href="{% url 'accounts:login' %}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Sign in</a>
+                        <a href="{% url 'accounts:register' %}" class="bg-neon text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-electric transition-colors">Sign up</a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </header>
 
+        <!-- Main Content Area -->
         <main class="p-4 sm:p-6 lg:p-8 flex-grow">
             {% block content %}
-            {% comment %} <div class="card p-6">
-                <h3 class="text-lg font-semibold text-white">Welcome!</h3>
-                <p class="text-gray-300 mt-2">This is the default content area. Create a new template that extends this file and overrides the `{% templatetag openblock %} content {% templatetag closeblock %}` block.</p>
-            </div> {% endcomment %}
+            <!-- Default content can be overridden by child templates -->
             {% endblock %}
         </main>
     </div>
 
-    <!-- Load PDF Utils first, then other scripts -->
+    <!-- Load JavaScript files -->
     <script src="{% static 'js/pdf-utils.js' %}"></script>
     <script src="{% static 'js/app.js' %}"></script>
     
@@ -274,7 +326,171 @@
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
         return csrfToken ? csrfToken.value : '';
     }
+    // Fallback function to use user information
+    function useUserInfoAsFallback() {
+        const businessNameElements = document.querySelectorAll('.business-name');
+        const businessEmailElements = document.querySelectorAll('.business-email');
+        const businessInitialsElements = document.querySelectorAll('.business-initials');
+        
+        businessNameElements.forEach(el => {
+            if (el.textContent === 'Your Business') {
+                el.textContent = '{{ user.username }}';
+            }
+        });
+        
+        businessEmailElements.forEach(el => {
+            if (el.textContent === 'business@example.com') {
+                el.textContent = '{{ user.email|default:"Update your profile" }}';
+            }
+        });
+        
+        businessInitialsElements.forEach(el => {
+            if (el.textContent === 'KR' || el.textContent === 'NB') {
+                el.textContent = '{{ user.username|slice:":2"|upper }}';
+            }
+        });
+    }
+    // Load company information for sidebar
+    async function loadCompanyInfo() {
+        try {
+            const response = await fetch('/api/get-company-details/');
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                const company = result.company;
+                
+                // Update sidebar with company name if available
+                const businessNameElements = document.querySelectorAll('.business-name');
+                const businessEmailElements = document.querySelectorAll('.business-email');
+                const businessInitialsElements = document.querySelectorAll('.business-initials');
+                
+                if (company.companyName && company.companyName.trim() !== '' && company.companyName !== 'Your Business') {
+                    businessNameElements.forEach(el => {
+                        el.textContent = company.companyName;
+                    });
+                    
+                    // Update initials with company name
+                    const initials = company.companyName
+                        .split(' ')
+                        .map(word => word.charAt(0))
+                        .join('')
+                        .toUpperCase()
+                        .substring(0, 2);
+                    
+                    businessInitialsElements.forEach(el => {
+                        el.textContent = initials;
+                    });
+                }
+                
+                if (company.email && company.email.trim() !== '' && company.email !== 'business@example.com') {
+                    businessEmailElements.forEach(el => {
+                        el.textContent = company.email;
+                    });
+                }
+
+                // Update page title with company name if it's the default
+                const pageTitle = document.querySelector('.glow-text');
+                if (pageTitle && company.companyName && company.companyName.trim() !== '') {
+                    if (pageTitle.textContent.includes('Nexus Bills Dashboard') || pageTitle.textContent.includes('Page name')) {
+                        pageTitle.textContent = `${company.companyName} Dashboard`;
+                    }
+                }
+                
+                // Update document title
+                if (company.companyName && company.companyName.trim() !== '' && !document.title.includes(company.companyName)) {
+                    document.title = `${company.companyName} - Nexus Bills`;
+                }
+
+                console.log('Company info loaded successfully:', company);
+            } else {
+                console.log('No company details found, using user information');
+                // Use user information as fallback
+                useUserInfoAsFallback();
+            }
+        } catch (error) {
+            console.error('Error loading company info:', error);
+            // Use user information as fallback
+            useUserInfoAsFallback();
+        }
+    }
+
+    // Initialize company info when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if user.is_authenticated %}
+        loadCompanyInfo();
+        {% else %}
+        useUserInfoAsFallback();
+        {% endif %}
+        // Only load company info if user is authenticated
+        {% if user.is_authenticated %}
+        loadCompanyInfo();
+        {% endif %}
+        
+        // Update the sidebar user info with actual user data immediately
+        {% if user.is_authenticated %}
+        const businessNameElements = document.querySelectorAll('.business-name');
+        const businessEmailElements = document.querySelectorAll('.business-email');
+        const businessInitialsElements = document.querySelectorAll('.business-initials');
+        
+        // Set initial values from Django template
+        businessNameElements.forEach(el => {
+            if (el.textContent === 'Your Business') {
+                el.textContent = '{{ user.username }}';
+            }
+        });
+        
+        businessEmailElements.forEach(el => {
+            if (el.textContent === 'business@example.com') {
+                el.textContent = '{{ user.email }}';
+            }
+        });
+        
+        businessInitialsElements.forEach(el => {
+            if (el.textContent === 'KR' || el.textContent === 'NB') {
+                el.textContent = '{{ user.username|slice:":2"|upper }}';
+            }
+        });
+        {% endif %}
+    });
     </script>
-    {% block scripts %}{% endblock scripts %}
+        {% block scripts %}{% endblock scripts %}
+        <script>
+        // Handle Django messages and display them as alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we're on login page and handle messages appropriately
+            const isLoginPage = window.location.pathname.includes('/accounts/login');
+            const isDashboardPage = window.location.pathname === '/' || 
+                                window.location.pathname === '/dashboard/' || 
+                                window.location.pathname.includes('/dashboard');
+            
+            // Convert Django messages to JavaScript alerts
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        {% if isDashboardPage and 'Welcome back' in message.message %}
+                            // Show welcome message only on dashboard
+                            showAppAlert('{{ message }}', 'success');
+                        {% elif isLoginPage and 'logged out' in message.message %}
+                            // Show logout message only on login page
+                            showAppAlert('{{ message }}', 'success');
+                        {% elif not 'Welcome back' in message.message and not 'logged out' in message.message %}
+                            // Show other messages normally
+                            showAppAlert('{{ message }}', '{{ message.tags }}');
+                        {% endif %}
+                    {% else %}
+                        showAppAlert('{{ message }}', '{{ message.tags }}');
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            
+            // Clear the welcome shown flag when leaving dashboard
+            window.addEventListener('beforeunload', function() {
+                if (!isDashboardPage) {
+                    // Clear session storage when navigating away from dashboard
+                    sessionStorage.removeItem('welcomeShown');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

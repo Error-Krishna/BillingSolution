@@ -1,12 +1,14 @@
-# drafts/views.py
+# drafts/views.py - Updated for multi-user
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from core.mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number, get_company_details_collection
 from bson.objectid import ObjectId
 from datetime import datetime
 
+@login_required
 def drafts_view(request):
     """
     Drafts Management - Continue working on existing drafts
@@ -14,6 +16,7 @@ def drafts_view(request):
     return render(request, 'drafts/drafts.html')
 
 @csrf_exempt
+@login_required
 def save_bill_view(request):
     """
     This view saves the bill data to MongoDB in appropriate collection.
@@ -35,22 +38,25 @@ def save_bill_view(request):
             if 'draftId' in bill_data:
                 del bill_data['draftId']
             
+            # Add user_id to bill data
+            bill_data['user_id'] = str(request.user.id)
+            
             # Generate automatic bill number for new bills - ALWAYS generate for new bills
             if not draft_id:
-                bill_data['billNumber'] = get_next_bill_number(status)
+                bill_data['billNumber'] = get_next_bill_number(status, str(request.user.id))
             # For existing drafts, keep the existing bill number
             # If somehow it's missing, generate one
             elif draft_id and not bill_data.get('billNumber'):
-                bill_data['billNumber'] = get_next_bill_number(status)
+                bill_data['billNumber'] = get_next_bill_number(status, str(request.user.id))
             
             # If we have a draftId and status is draft, UPDATE the existing draft
             if draft_id and status == 'draft':
                 try:
                     drafts_collection = get_drafts_collection()
                     
-                    # Update the existing draft
+                    # Update the existing draft (only if it belongs to the user)
                     result = drafts_collection.update_one(
-                        {'_id': ObjectId(draft_id)},
+                        {'_id': ObjectId(draft_id), 'user_id': str(request.user.id)},
                         {'$set': bill_data}
                     )
                     
@@ -90,7 +96,7 @@ def save_bill_view(request):
                     
                     # For pakka bills, automatically add company details
                     company_collection = get_company_details_collection()
-                    company_details = company_collection.find_one()
+                    company_details = company_collection.find_one({'user_id': str(request.user.id)})
                     
                     if company_details:
                         # Add company details to pakka bill
@@ -156,14 +162,15 @@ def save_bill_view(request):
         'message': 'Invalid request method. Only POST allowed.'
     }, status=405)
 
+@login_required
 def get_drafts_view(request):
     """
-    Retrieve all draft bills
+    Retrieve all draft bills for current user
     """
     if request.method == 'GET':
         try:
             drafts_collection = get_drafts_collection()
-            drafts = list(drafts_collection.find().sort('_id', -1))
+            drafts = list(drafts_collection.find({'user_id': str(request.user.id)}).sort('_id', -1))
             
             # Convert ObjectId to string for JSON serialization
             for draft in drafts:
@@ -185,14 +192,15 @@ def get_drafts_view(request):
         'message': 'Invalid request method'
     }, status=405)
 
+@login_required
 def get_draft_by_id(request, draft_id):
     """
-    Retrieve a single draft by ID
+    Retrieve a single draft by ID (only if it belongs to the user)
     """
     if request.method == 'GET':
         try:
             drafts_collection = get_drafts_collection()
-            draft = drafts_collection.find_one({'_id': ObjectId(draft_id)})
+            draft = drafts_collection.find_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             if draft:
                 # Convert ObjectId to string for JSON serialization
@@ -219,14 +227,15 @@ def get_draft_by_id(request, draft_id):
     }, status=405)
 
 @csrf_exempt
+@login_required
 def delete_draft_view(request, draft_id):
     """
-    Delete a draft by ID
+    Delete a draft by ID (only if it belongs to the user)
     """
     if request.method == 'DELETE':
         try:
             drafts_collection = get_drafts_collection()
-            result = drafts_collection.delete_one({'_id': ObjectId(draft_id)})
+            result = drafts_collection.delete_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             if result.deleted_count == 1:
                 return JsonResponse({
@@ -251,9 +260,10 @@ def delete_draft_view(request, draft_id):
     }, status=405)
 
 @csrf_exempt
+@login_required
 def convert_draft_to_kacha(request, draft_id):
     """
-    Convert a draft to kacha bill and delete the draft
+    Convert a draft to kacha bill and delete the draft (only if it belongs to the user)
     """
     if request.method == 'POST':
         try:
@@ -261,7 +271,7 @@ def convert_draft_to_kacha(request, draft_id):
             kacha_bills_collection = get_kacha_bills_collection()
             
             # Get the draft
-            draft = drafts_collection.find_one({'_id': ObjectId(draft_id)})
+            draft = drafts_collection.find_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             if not draft:
                 return JsonResponse({
@@ -278,13 +288,13 @@ def convert_draft_to_kacha(request, draft_id):
             draft_data['converted_from'] = 'draft'
             draft_data['original_draft_id'] = draft_id
             draft_data['converted_at'] = datetime.now().isoformat()
-            draft_data['billNumber'] = get_next_bill_number('kacha')
+            draft_data['billNumber'] = get_next_bill_number('kacha', str(request.user.id))
             
             # Insert into kacha bills
             result = kacha_bills_collection.insert_one(draft_data)
             
             # Delete the original draft
-            drafts_collection.delete_one({'_id': ObjectId(draft_id)})
+            drafts_collection.delete_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             return JsonResponse({
                 'status': 'success', 
@@ -304,9 +314,10 @@ def convert_draft_to_kacha(request, draft_id):
     }, status=405)
 
 @csrf_exempt
+@login_required
 def convert_draft_to_pakka(request, draft_id):
     """
-    Convert a draft directly to pakka bill and delete the draft
+    Convert a draft directly to pakka bill and delete the draft (only if it belongs to the user)
     """
     if request.method == 'POST':
         try:
@@ -315,7 +326,7 @@ def convert_draft_to_pakka(request, draft_id):
             company_collection = get_company_details_collection()
             
             # Get the draft
-            draft = drafts_collection.find_one({'_id': ObjectId(draft_id)})
+            draft = drafts_collection.find_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             if not draft:
                 return JsonResponse({
@@ -324,7 +335,7 @@ def convert_draft_to_pakka(request, draft_id):
                 }, status=404)
             
             # Get company details
-            company_details = company_collection.find_one()
+            company_details = company_collection.find_one({'user_id': str(request.user.id)})
             if not company_details:
                 return JsonResponse({
                     'status': 'error', 
@@ -372,7 +383,7 @@ def convert_draft_to_pakka(request, draft_id):
             draft_data['original_draft_id'] = draft_id
             draft_data['converted_at'] = datetime.now().isoformat()
             draft_data['billType'] = 'pakka'
-            draft_data['billNumber'] = get_next_bill_number('pakka')
+            draft_data['billNumber'] = get_next_bill_number('pakka', str(request.user.id))
             
             # Ensure required pakka bill fields exist
             # REMOVED: customerGst field
@@ -385,7 +396,7 @@ def convert_draft_to_pakka(request, draft_id):
             result = pakka_bills_collection.insert_one(draft_data)
             
             # Delete the original draft
-            drafts_collection.delete_one({'_id': ObjectId(draft_id)})
+            drafts_collection.delete_one({'_id': ObjectId(draft_id), 'user_id': str(request.user.id)})
             
             return JsonResponse({
                 'status': 'success', 

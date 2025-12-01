@@ -1,33 +1,36 @@
-# kacha_bills/views.py
+# kacha_bills/views.py - Updated for multi-user
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from core.mongo_client import get_kacha_bills_collection, get_pakka_bills_collection, get_next_bill_number, get_company_details_collection
 from bson.objectid import ObjectId
 from datetime import datetime
 
-
+@login_required
 def kacha_bill_view(request):
     """
     Kacha Bill Generator - Initial bill for deal negotiation
     """
     return render(request, 'kacha_bills/kacha_bill.html')
 
+@login_required
 def kacha_bills_view(request):
     """
     View to display all kacha bills
     """
     return render(request, 'kacha_bills/kacha_bills.html')
 
+@login_required
 def get_all_kacha_bills(request):
     """
-    API endpoint to get all kacha bills
+    API endpoint to get all kacha bills for current user
     """
     if request.method == 'GET':
         try:
             kacha_bills_collection = get_kacha_bills_collection()
-            kacha_bills = list(kacha_bills_collection.find().sort('_id', -1))
+            kacha_bills = list(kacha_bills_collection.find({'user_id': str(request.user.id)}).sort('_id', -1))
             
             # Convert ObjectId to string for JSON serialization
             for bill in kacha_bills:
@@ -50,9 +53,10 @@ def get_all_kacha_bills(request):
     }, status=405)
 
 @csrf_exempt
+@login_required
 def convert_kacha_to_pakka(request, kacha_id):
     """
-    Convert a kacha bill to pakka bill and delete the kacha bill
+    Convert a kacha bill to pakka bill and delete the kacha bill (only if it belongs to the user)
     """
     if request.method == 'POST':
         try:
@@ -61,7 +65,7 @@ def convert_kacha_to_pakka(request, kacha_id):
             company_collection = get_company_details_collection()
             
             # Get the kacha bill
-            kacha_bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id)})
+            kacha_bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id), 'user_id': str(request.user.id)})
             
             if not kacha_bill:
                 return JsonResponse({
@@ -70,7 +74,7 @@ def convert_kacha_to_pakka(request, kacha_id):
                 }, status=404)
             
             # Get company details
-            company_details = company_collection.find_one()
+            company_details = company_collection.find_one({'user_id': str(request.user.id)})
             if not company_details:
                 return JsonResponse({
                     'status': 'error', 
@@ -118,7 +122,7 @@ def convert_kacha_to_pakka(request, kacha_id):
             pakka_data['original_kacha_id'] = kacha_id
             pakka_data['converted_at'] = datetime.now().isoformat()
             pakka_data['billType'] = 'pakka'
-            pakka_data['billNumber'] = get_next_bill_number('pakka')
+            pakka_data['billNumber'] = get_next_bill_number('pakka', str(request.user.id))
             
             # Ensure required pakka bill fields exist
             # REMOVED: customerGst field
@@ -131,7 +135,7 @@ def convert_kacha_to_pakka(request, kacha_id):
             result = pakka_bills_collection.insert_one(pakka_data)
             
             # DELETE the kacha bill after successful conversion
-            kacha_bills_collection.delete_one({'_id': ObjectId(kacha_id)})
+            kacha_bills_collection.delete_one({'_id': ObjectId(kacha_id), 'user_id': str(request.user.id)})
             
             return JsonResponse({
                 'status': 'success', 
@@ -150,16 +154,16 @@ def convert_kacha_to_pakka(request, kacha_id):
         'message': 'Invalid request method'
     }, status=405)
 
-
 @csrf_exempt
+@login_required
 def delete_kacha_bill(request, kacha_id):
     """
-    Delete a kacha bill by ID
+    Delete a kacha bill by ID (only if it belongs to the user)
     """
     if request.method == 'DELETE':
         try:
             kacha_bills_collection = get_kacha_bills_collection()
-            result = kacha_bills_collection.delete_one({'_id': ObjectId(kacha_id)})
+            result = kacha_bills_collection.delete_one({'_id': ObjectId(kacha_id), 'user_id': str(request.user.id)})
             
             if result.deleted_count == 1:
                 return JsonResponse({
@@ -183,14 +187,15 @@ def delete_kacha_bill(request, kacha_id):
         'message': 'Invalid request method. Only DELETE allowed.'
     }, status=405)
 
+@login_required
 def get_kacha_bill_by_id(request, kacha_id):
     """
-    API endpoint to get a single kacha bill by ID
+    API endpoint to get a single kacha bill by ID (only if it belongs to the user)
     """
     if request.method == 'GET':
         try:
             kacha_bills_collection = get_kacha_bills_collection()
-            bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id)})
+            bill = kacha_bills_collection.find_one({'_id': ObjectId(kacha_id), 'user_id': str(request.user.id)})
             
             if bill:
                 bill['_id'] = str(bill['_id'])

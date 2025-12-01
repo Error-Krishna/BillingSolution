@@ -1,15 +1,27 @@
+# dashboard/views.py - Updated for multi-user
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from core.mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection
 from core.utils import calculate_collection_totals, get_monthly_trends, get_top_customers
 from datetime import datetime, timedelta
 
+@login_required
 def dashboard_view(request):
     """
     Dashboard view with statistics and overview
     """
+    # Set welcome message only if it's a fresh login (check session)
+    if not request.session.get('welcome_shown', False):
+        messages.success(request, f'Welcome back, {request.user.username}!')
+        request.session['welcome_shown'] = True
+        # Set session expiry to browser close or 1 hour
+        request.session.set_expiry(3600)  # 1 hour
+    
     return render(request, 'dashboard/dashboard.html')
 
+@login_required
 def get_dashboard_data(request):
     """
     API endpoint to get dashboard statistics with comprehensive error handling
@@ -33,35 +45,38 @@ def get_dashboard_data(request):
             week_ago = today - timedelta(days=7)
             month_ago = today - timedelta(days=30)
             
-            # Basic counts with comprehensive error handling
-            total_drafts = drafts_collection.count_documents({})
-            total_kacha_bills = kacha_bills_collection.count_documents({})
-            total_pakka_bills = pakka_bills_collection.count_documents({})
+            # Basic counts with comprehensive error handling - USER SPECIFIC
+            total_drafts = drafts_collection.count_documents({'user_id': str(request.user.id)})
+            total_kacha_bills = kacha_bills_collection.count_documents({'user_id': str(request.user.id)})
+            total_pakka_bills = pakka_bills_collection.count_documents({'user_id': str(request.user.id)})
             total_bills = total_kacha_bills + total_pakka_bills
             
-            # Recent activity (last 7 days) with error handling
+            # Recent activity (last 7 days) with error handling - USER SPECIFIC
             recent_drafts = list(drafts_collection.find({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             }).sort('_id', -1).limit(5))
             
             recent_kacha_bills = list(kacha_bills_collection.find({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             }).sort('_id', -1).limit(5))
             
             recent_pakka_bills = list(pakka_bills_collection.find({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             }).sort('_id', -1).limit(5))
             
-            # Calculate totals for each collection with error handling
-            draft_totals = calculate_collection_totals(drafts_collection)
-            kacha_totals = calculate_collection_totals(kacha_bills_collection)
-            pakka_totals = calculate_collection_totals(pakka_bills_collection)
+            # Calculate totals for each collection with error handling - USER SPECIFIC
+            draft_totals = calculate_collection_totals(drafts_collection, str(request.user.id))
+            kacha_totals = calculate_collection_totals(kacha_bills_collection, str(request.user.id))
+            pakka_totals = calculate_collection_totals(pakka_bills_collection, str(request.user.id))
             
-            # Monthly trends with error handling
-            monthly_data = get_monthly_trends()
+            # Monthly trends with error handling - USER SPECIFIC
+            monthly_data = get_monthly_trends(str(request.user.id))
             
-            # Top customers with error handling
-            top_customers = get_top_customers()
+            # Top customers with error handling - USER SPECIFIC
+            top_customers = get_top_customers(str(request.user.id))
             
             # Convert ObjectId to string for JSON serialization with error handling
             for draft in recent_drafts:
@@ -73,17 +88,20 @@ def get_dashboard_data(request):
             for bill in recent_pakka_bills:
                 bill['_id'] = str(bill['_id'])
             
-            # Calculate additional statistics
+            # Calculate additional statistics - USER SPECIFIC
             # This week's activity count
             this_week_drafts = drafts_collection.count_documents({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             })
             
             this_week_kacha = kacha_bills_collection.count_documents({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             })
             
             this_week_pakka = pakka_bills_collection.count_documents({
+                'user_id': str(request.user.id),
                 'billDate': {'$gte': week_ago.strftime('%Y-%m-%d')}
             })
             
