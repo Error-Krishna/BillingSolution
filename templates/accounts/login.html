@@ -13,14 +13,18 @@
             theme: {
                 extend: {
                     colors: {
-                        'midnight': '#0f172a',
-                        'twilight': '#1e293b',
-                        'mystic': '#334155',
-                        'neon': '#06b6d4',
-                        'electric': '#8b5cf6',
-                        'glow': '#22d3ee',
-                        'deep-space': '#020617',
-                        'space-black': '#0f172a'
+                        'midnight': '#000000',
+                        'twilight': '#121212',
+                        'mystic': '#333333',
+                        'neon': '#ff6600',
+                        'electric': '#ff8533',
+                        'glow': '#ff9900',
+                        'deep-space': '#0a0a0a',
+                        'space-black': '#000000',
+                        'orange-light': '#ff944d',
+                        'orange-dark': '#cc5200',
+                        'gray-light': '#e0e0e0',
+                        'gray-dark': '#666666'
                     }
                 }
             }
@@ -31,43 +35,46 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            background: linear-gradient(135deg, #000000 0%, #121212 50%, #000000 100%);
             min-height: 100vh;
+            color: #e0e0e0;
         }
         
         .glass-effect {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(18, 18, 18, 0.8);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
             transition: all 0.3s ease;
+            color: white;
         }
         
         .btn-primary:hover {
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            box-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
             transform: translateY(-1px);
         }
         
         .glow-text {
-            text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+            text-shadow: 0 0 10px rgba(255, 102, 0, 0.7);
         }
         
         .logo-glow {
-            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.7));
+            filter: drop-shadow(0 0 8px rgba(255, 102, 0, 0.7));
         }
         
         .form-input {
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid #334155;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333333;
             transition: all 0.3s ease;
+            color: white;
         }
         
         .form-input:focus {
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+            border-color: #ff6600;
+            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
         }
     </style>
 </head>
@@ -109,7 +116,7 @@
                             Username or Email
                         </label>
                         <input id="username" name="username" type="text" required 
-                               class="form-input relative block w-full px-4 py-3 rounded-lg placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon"
+                               class="form-input relative block w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neon"
                                placeholder="Enter your username or email">
                     </div>
                     <div>
@@ -117,7 +124,7 @@
                             Password
                         </label>
                         <input id="password" name="password" type="password" required 
-                               class="form-input relative block w-full px-4 py-3 rounded-lg placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon"
+                               class="form-input relative block w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-neon"
                                placeholder="Enter your password">
                     </div>
                 </div>
