@@ -11,4 +11,6 @@ urlpatterns = [
     path('', include('drafts.urls')),
     path('', include('onboarding.urls')),
     path('', include('user_profile.urls')),
+    # path('', include('core.urls')), 
+    path('', include('core.urls', namespace='core')),
 ]

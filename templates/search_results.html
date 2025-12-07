@@ -1,0 +1,249 @@
+[file content begin]
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Results - Nexus Bills{% endblock %}
+
+{% block page_title %}Search Results{% endblock %}
+{% block page_subtitle %}Found {{ results.count }} results for "{{ query }}"{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Search Summary -->
+    <div class="card rounded-xl p-6 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-neon">
+                    Search Results for "{{ query }}"
+                </h3>
+                <p class="text-gray-400 mt-1">
+                    Found {{ results.count }} bills ({{ results.kacha_count }} kacha, {{ results.pakka_count }} pakka)
+                </p>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <span class="text-xs px-2 py-1 rounded bg-neon/20 text-neon">
+                        Customer Name
+                    </span>
+                    <span class="text-xs px-2 py-1 rounded bg-electric/20 text-electric">
+                        Firm/Seller Name
+                    </span>
+                    <span class="text-xs px-2 py-1 rounded bg-glow/20 text-glow">
+                        Bill Date
+                    </span>
+                    <span class="text-xs px-2 py-1 rounded bg-mystic/20 text-gray-300">
+                        Bill Number
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'dashboard:dashboard' %}" 
+               class="btn-primary px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- Quick Search Filters -->
+        <div class="mt-4 p-4 bg-mystic/30 rounded-lg">
+            <p class="text-sm text-gray-400 mb-2">Search tips:</p>
+            <ul class="text-xs text-gray-400 space-y-1">
+                <li>• Search by customer name, firm name, or seller name</li>
+                <li>• Search by date (YYYY-MM-DD format)</li>
+                <li>• Search by bill number (KACHA-XXX or PAKKA-XXX)</li>
+                <li>• Search by product/item name</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if results.results %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for bill in results.results %}
+        <div class="card rounded-xl p-6 hover:shadow-lg transition-all duration-300 border-l-4 
+                {% if bill.type == 'kacha' %}border-yellow-500 hover:border-yellow-400{% else %}border-green-500 hover:border-green-400{% endif %}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center flex-wrap gap-2 mb-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 
+                                    {% if bill.type == 'kacha' %}bg-yellow-500/20 text-yellow-300{% else %}bg-green-500/20 text-green-300{% endif %}">
+                            {{ bill.type|title }} Bill
+                        </span>
+                        <span class="text-sm font-medium text-neon bg-mystic/50 px-2 py-1 rounded">
+                            {{ bill.billNumber }}
+                        </span>
+                        <span class="text-sm text-gray-400 bg-mystic/30 px-2 py-1 rounded">
+                            {{ bill.billDate }}
+                        </span>
+                    </div>
+                    
+                    <h4 class="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                        {{ bill.customerName }}
+                        {% if bill.type == 'kacha' and bill.firmName %}
+                        <span class="text-sm text-electric font-normal">({{ bill.firmName }})</span>
+                        {% elif bill.type == 'pakka' and bill.sellerName %}
+                        <span class="text-sm text-electric font-normal">({{ bill.sellerName }})</span>
+                        {% endif %}
+                    </h4>
+                    
+                    {% if bill.customerAddress %}
+                    <p class="text-sm text-gray-400 mb-3 line-clamp-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                        {{ bill.customerAddress }}
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Products Preview -->
+                    {% if bill.products %}
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-400 mb-1 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                            </svg>
+                            Items:
+                        </p>
+                        <div class="flex flex-wrap gap-1">
+                            {% for product in bill.products %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-mystic/50 text-gray-300">
+                                {{ product.item }} ({{ product.quantity }})
+                                {% if product.rate %}
+                                <span class="ml-1 text-electric">@ ₹{{ product.rate }}</span>
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Bill Total and Actions -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-mystic/50">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xl font-bold text-white">
+                                ₹{{ bill.totalAmount|default:0|floatformat:2 }}
+                            </span>
+                            {% if bill.status == 'pending' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-300">
+                                Pending
+                            </span>
+                            {% elif bill.status == 'converted' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-500/20 text-green-300">
+                                Converted
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            {% if bill.type == 'kacha' %}
+                            <a href="{% url 'kacha_bills:kacha_bills' %}" 
+                               class="text-xs px-4 py-2 rounded bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                                View Kacha
+                            </a>
+                            {% if bill.status != 'converted' %}
+                            <a href="{% url 'pakka_bills:pakka_bill' %}?convert={{ bill._id }}" 
+                               class="text-xs px-4 py-2 rounded bg-green-500/20 text-green-300 hover:bg-green-500/30 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                Convert
+                            </a>
+                            {% endif %}
+                            {% else %}
+                            <a href="{% url 'pakka_bills:pakka_bills' %}" 
+                               class="text-xs px-4 py-2 rounded bg-green-500/20 text-green-300 hover:bg-green-500/30 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                                View Pakka
+                            </a>
+                            {% endif %}
+                            <button onclick="generateBillPDF('{{ bill._id }}', '{{ bill.type }}')" 
+                                    class="text-xs px-4 py-2 rounded bg-neon/20 text-neon hover:bg-neon/30 transition flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination or Load More -->
+    {% if results.count > 20 %}
+    <div class="mt-8 text-center">
+        <button onclick="loadMoreSearchResults()" 
+                class="px-6 py-3 rounded-lg font-medium border border-mystic text-white hover:bg-mystic/50 transition flex items-center mx-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Load More Results ({{ results.count|add:"-20" }} more)
+        </button>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- No Results -->
+    <div class="card rounded-xl p-12 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-400 mb-2">No bills found for "{{ query }}"</h3>
+        <p class="text-gray-500 mb-6 max-w-md mx-auto">Try different search terms. You can search by customer name, firm name, date, or bill number.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{% url 'kacha_bills:kacha_bill' %}" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Create Kacha Bill
+            </a>
+            <a href="{% url 'pakka_bills:pakka_bill' %}" class="px-6 py-3 rounded-lg font-medium border border-mystic text-white hover:bg-mystic/50 transition flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Create Pakka Bill
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function loadMoreSearchResults() {
+        const query = new URLSearchParams(window.location.search).get('q');
+        if (query) {
+            window.location.href = `/search/?q=${encodeURIComponent(query)}&limit=50`;
+        }
+    }
+    
+    async function generateBillPDF(billId, billType) {
+        try {
+            showAppAlert('Generating PDF...', 'info');
+            
+            const response = await fetch(`/api/generate-pdf/${billType}/${billId}/`);
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                showAppAlert('PDF generated successfully!', 'success');
+                // Open PDF in new tab
+                window.open(result.pdf_url, '_blank');
+            } else {
+                showAppAlert(result.message || 'Failed to generate PDF', 'error');
+            }
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            showAppAlert('Failed to generate PDF', 'error');
+        }
+    }
+</script>
+{% endblock %}
+[file content end]

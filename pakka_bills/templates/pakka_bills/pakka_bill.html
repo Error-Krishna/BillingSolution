@@ -8,6 +8,9 @@
 {% block content %}
 {% csrf_token %}
 <div class="max-w-6xl mx-auto">
+    <!-- Hidden div for URLs -->
+    <div id="urls" data-create-url="{% url 'pakka_bills:create_pakka_bill' %}" style="display: none;"></div>
+    
     <div class="card rounded-xl p-6 mb-6">
         <h3 class="text-lg font-semibold mb-4 text-neon">Pakka Bill Information</h3>
         <p class="text-gray-400 mb-4">Create final official bills with complete seller and tax details</p>
@@ -42,6 +45,10 @@
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Customer Name *</label>
                 <input type="text" id="customerName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter customer name" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Customer Firm Name *</label>
+                <input type="text" id="customerFirmName" class="w-full px-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent" placeholder="Enter customer's firm/business name">
             </div>
             
             <div>
@@ -141,5 +148,5 @@
 </template>
 
 <script src="{% static 'js/pdf-utils.js' %}"></script>
-<script src="{% static 'js/kacha_bill.js' %}"></script>
+<script src="{% static 'js/pakka_bill.js' %}"></script>  <!-- Changed from kacha_bill.js to pakka_bill.js -->
 {% endblock %}

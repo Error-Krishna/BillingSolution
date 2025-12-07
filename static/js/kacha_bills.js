@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="text-sm text-gray-400">Customer: ${escapeHtml(bill.customerName || 'Not specified')}</p>
                         <p class="text-sm text-gray-400">Date: ${escapeHtml(bill.billDate || 'Not set')}</p>
                         <p class="text-sm text-yellow-500 mt-2">Total: ${bill.totalAmount ? '₹' + bill.totalAmount.toFixed(2) : '₹0.00'}</p>
-                        ${bill.converted_from ? `<p class="text-xs text-gray-500 mt-1">Converted from: ${bill.converted_from}</p>` : ''}
                     </div>
                     <div class="flex flex-col space-y-2 ml-4">
                         <div class="flex space-x-2">
@@ -99,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Escape HTML to prevent XSS
     function escapeHtml(unsafe) {
+        if (!unsafe) return '';
         return unsafe
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -231,4 +231,22 @@ document.addEventListener('DOMContentLoaded', function() {
             loadKachaBills();
         }
     };
+
+    // Helper function to get CSRF token
+    function getCSRFToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || '';
+    }
+
+    function showAppAlert(message, type = 'success') {
+        // Use the global showAppAlert function if available, otherwise use basic alert
+        if (window.showAppAlert) {
+            window.showAppAlert(message, type);
+        } else {
+            alert(message);
+        }
+    }
 });

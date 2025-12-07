@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- GLOBAL VARIABLES ---
     let currentDraftId = null;
+    let companyDetails = null; // Store company details for PDF generation
     
     // --- SETUP ---
     const billDateEl = document.getElementById('billDate');
@@ -22,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBillForView(viewId);
     } else {
         addProductRow();
+        // Load company details for PDF generation only (not for form)
+        loadCompanyDetailsForPDF();
     }
     
     // --- EVENT LISTENERS ---
@@ -76,15 +79,73 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    async function loadCompanyDetailsForPDF() {
+        try {
+            const response = await fetch('/api/get-company-details/');
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                companyDetails = result.company;
+                console.log('Company details loaded for PDF generation');
+            } else {
+                console.warn('Company details not found for PDF generation');
+                companyDetails = null;
+            }
+        } catch (error) {
+            console.error('Error loading company details for PDF:', error);
+            companyDetails = null;
+        }
+    }
+
+    async function enrichBillDataWithCompanyDetails(billData) {
+        try {
+            // If company details not loaded yet, load them
+            if (!companyDetails) {
+                await loadCompanyDetailsForPDF();
+            }
+            
+            if (companyDetails) {
+                // Add company details to bill data for PDF generation
+                // DO NOT overwrite firmName from user input
+                billData.companyDetails = companyDetails;
+                
+                // Format company address for PDF
+                const addressParts = [];
+                if (companyDetails.address) addressParts.push(companyDetails.address);
+                
+                const cityStatePincode = [];
+                if (companyDetails.city) cityStatePincode.push(companyDetails.city);
+                if (companyDetails.state) cityStatePincode.push(companyDetails.state);
+                if (companyDetails.pincode) cityStatePincode.push(`PIN: ${companyDetails.pincode}`);
+                
+                if (cityStatePincode.length > 0) {
+                    addressParts.push(cityStatePincode.join(', '));
+                }
+                
+                billData.companyAddress = addressParts.join('\n');
+                billData.pdfCompanyName = companyDetails.companyName || ''; // For PDF only
+                billData.pdfGstNumber = companyDetails.gstNumber || ''; // For PDF only
+            }
+            return billData;
+        } catch (error) {
+            console.error('Error enriching bill data:', error);
+            return billData;
+        }
+    }
+    
     function populateFormWithDraft(draft) {
-        if (draft.firmName) document.getElementById('firmName').value = draft.firmName;
+        // Only populate what user entered in draft
         if (draft.billDate) document.getElementById('billDate').value = draft.billDate;
         if (draft.customerName) document.getElementById('customerName').value = draft.customerName;
         if (draft.customerAddress) document.getElementById('customerAddress').value = draft.customerAddress;
         if (draft.notes) document.getElementById('notes').value = draft.notes;
         if (draft.terms) document.getElementById('terms').value = draft.terms;
         
-        // Note: We intentionally DO NOT populate Bill Number here as it is not an input field
+        // Do NOT populate firmName from draft unless it's empty and user wants to keep it
+        // This allows user to enter their own firm name
+        if (draft.firmName && document.getElementById('firmName').value === '') {
+            document.getElementById('firmName').value = draft.firmName;
+        }
         
         const productsBody = document.getElementById('productsBody');
         if (productsBody) productsBody.innerHTML = '';
@@ -111,12 +172,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateFormWithBill(bill) {
-        if (bill.firmName) document.getElementById('firmName').value = bill.firmName;
+        // Only populate what user entered in bill
         if (bill.billDate) document.getElementById('billDate').value = bill.billDate;
         if (bill.customerName) document.getElementById('customerName').value = bill.customerName;
         if (bill.customerAddress) document.getElementById('customerAddress').value = bill.customerAddress;
         if (bill.notes) document.getElementById('notes').value = bill.notes;
         if (bill.terms) document.getElementById('terms').value = bill.terms;
+        
+        // Do NOT populate firmName from bill unless it's empty and user wants to keep it
+        if (bill.firmName && document.getElementById('firmName').value === '') {
+            document.getElementById('firmName').value = bill.firmName;
+        }
         
         const productsBody = document.getElementById('productsBody');
         if (productsBody) productsBody.innerHTML = '';
@@ -283,18 +349,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function downloadCurrentBill() {
+    async function downloadCurrentBill() {
         const billData = collectBillData();
         if (validateBill(billData)) {
             // Add bill number if available
             if (currentDraftId) {
                 billData.billNumber = `DRAFT-${currentDraftId.substring(0, 8)}`;
             }
-            downloadKachaBillPDF(billData);
+            // Enrich with company details for PDF only
+            const enrichedBillData = await enrichBillDataWithCompanyDetails(billData);
+            downloadKachaBillPDF(enrichedBillData);
         }
     }
 
-    function downloadCurrentBillPDF() {
+    async function downloadCurrentBillPDF() {
         const billData = collectBillData();
         // Add bill number if available from view mode
         const urlParams = new URLSearchParams(window.location.search);
@@ -304,7 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (currentDraftId) {
             billData.billNumber = `DRAFT-${currentDraftId.substring(0, 8)}`;
         }
-        downloadKachaBillPDF(billData);
+        // Enrich with company details for PDF only
+        const enrichedBillData = await enrichBillDataWithCompanyDetails(billData);
+        downloadKachaBillPDF(enrichedBillData);
     }
 
     async function downloadKachaBillPDF(billData) {
@@ -341,10 +411,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // IMPORTANT: We do NOT collect 'billNumber' here.
-        // The backend handles generation automatically.
+        // Collect ONLY user-entered data
         return {
-            firmName: document.getElementById('firmName')?.value || '',
+            firmName: document.getElementById('firmName')?.value || '', // User enters this
             billDate: document.getElementById('billDate')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
             customerAddress: document.getElementById('customerAddress')?.value || '',

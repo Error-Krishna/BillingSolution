@@ -1,19 +1,134 @@
-# core/utils.py - Updated for multi-user
+# core/utils.py
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from .mongo_client import get_drafts_collection, get_kacha_bills_collection, get_pakka_bills_collection
+from .models import Notification
+from django.utils import timezone
 
-def calculate_collection_totals(collection, user_id=None):
+# Notification creation functions
+def create_bill_notification(user, bill_type, bill_number, customer_name, bill_id=None):
     """
-    Calculate total amount and count for a collection with robust error handling
+    Create a notification when a bill is created
     """
     try:
-        # Build query with user filter if provided
+        notification = Notification.objects.create(
+            user=user,
+            notification_type='success',
+            title=f'{bill_type.capitalize()} Bill Created',
+            message=f'{bill_type.capitalize()} bill {bill_number} for {customer_name} has been created successfully.',
+            action_url=f'/{bill_type}-bills/' + (f'#{bill_id}' if bill_id else ''),
+            bill_type=bill_type,
+            customer_name=customer_name
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating bill notification: {e}")
+        return None
+
+def create_welcome_notification(user):
+    """
+    Create welcome notification for new users
+    """
+    try:
+        notification = Notification.objects.create(
+            user=user,
+            title='Welcome to Nexus Bills!',
+            notification_type='info',
+            message='Get started by creating your first bill.',
+            action_url='/kacha-bill/'
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating welcome notification: {e}")
+        return None
+
+def create_bill_updated_notification(user, bill_type, bill_number, customer_name):
+    """
+    Create a notification when a bill is updated
+    """
+    try:
+        notification = Notification.objects.create(
+            user=user,
+            notification_type='info',
+            title=f'{bill_type.capitalize()} Bill Updated',
+            message=f'{bill_type.capitalize()} bill {bill_number} for {customer_name} has been updated.',
+            action_url=f'/{bill_type}-bills/',
+            bill_type=bill_type,
+            customer_name=customer_name
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating bill updated notification: {e}")
+        return None
+
+def create_bill_deleted_notification(user, bill_type, bill_number):
+    """
+    Create a notification when a bill is deleted
+    """
+    try:
+        notification = Notification.objects.create(
+            user=user,
+            notification_type='warning',
+            title=f'{bill_type.capitalize()} Bill Deleted',
+            message=f'{bill_type.capitalize()} bill {bill_number} has been deleted.',
+            action_url=f'/{bill_type}-bills/',
+            bill_type=bill_type
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating bill deleted notification: {e}")
+        return None
+
+def create_conversion_notification(user, from_type, to_type, bill_number, customer_name):
+    """
+    Create a notification when a bill is converted
+    """
+    try:
+        notification = Notification.objects.create(
+            user=user,
+            notification_type='success',
+            title='Bill Converted Successfully',
+            message=f'{from_type.capitalize()} bill {bill_number} for {customer_name} has been converted to {to_type} bill.',
+            action_url=f'/{to_type}-bills/',
+            bill_type=to_type,
+            customer_name=customer_name
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating conversion notification: {e}")
+        return None
+
+def create_notification(user, title, message, notification_type='info', 
+                       action_url=None, bill_type=None, customer_name=None, amount=None):
+    """
+    Generic function to create notifications
+    """
+    try:
+        notification = Notification.objects.create(
+            user=user,
+            title=title,
+            message=message,
+            notification_type=notification_type,
+            action_url=action_url,
+            bill_type=bill_type,
+            customer_name=customer_name,
+            amount=amount
+        )
+        return notification
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        return None
+
+# Dashboard utility functions
+def calculate_collection_totals(collection, user_id=None):
+    """
+    Calculate total amount and count for a collection
+    """
+    try:
         query = {}
         if user_id:
             query['user_id'] = user_id
             
-        # Try aggregation pipeline first (more efficient)
         pipeline = [
             {'$match': query},
             {
@@ -35,9 +150,8 @@ def calculate_collection_totals(collection, user_id=None):
             return {'amount': 0, 'count': 0}
             
     except Exception as e:
-        print(f"Aggregation failed for collection, falling back to manual calculation: {e}")
+        print(f"Aggregation failed: {e}")
         try:
-            # Fall back to manual calculation
             total_amount = 0
             count = 0
             query = {}
@@ -54,7 +168,7 @@ def calculate_collection_totals(collection, user_id=None):
 
 def get_monthly_trends(user_id=None):
     """
-    Get monthly trends for the last 6 months with error handling
+    Get monthly trends for the last 6 months
     """
     monthly_data = []
     kacha_collection = get_kacha_bills_collection()
@@ -68,12 +182,10 @@ def get_monthly_trends(user_id=None):
                 
                 month_str = month_start.strftime('%b %Y')
                 
-                # Build user query
                 user_query = {}
                 if user_id:
                     user_query['user_id'] = user_id
                 
-                # Kacha bills for the month
                 kacha_query = {
                     **user_query,
                     'billDate': {
@@ -83,7 +195,6 @@ def get_monthly_trends(user_id=None):
                 }
                 kacha_count = kacha_collection.count_documents(kacha_query)
                 
-                # Pakka bills for the month
                 pakka_query = {
                     **user_query,
                     'billDate': {
@@ -101,7 +212,6 @@ def get_monthly_trends(user_id=None):
                 })
             except Exception as e:
                 print(f"Error processing month {i}: {e}")
-                # Add empty data for this month to maintain consistency
                 month_start = (datetime.now().replace(day=1) - timedelta(days=30*i)).replace(day=1)
                 month_str = month_start.strftime('%b %Y')
                 monthly_data.append({
@@ -113,7 +223,6 @@ def get_monthly_trends(user_id=None):
                 
     except Exception as e:
         print(f"Error in get_monthly_trends: {e}")
-        # Return empty trends if there's an error
         monthly_data = []
         for i in range(5, -1, -1):
             month_start = (datetime.now().replace(day=1) - timedelta(days=30*i)).replace(day=1)
@@ -129,27 +238,23 @@ def get_monthly_trends(user_id=None):
 
 def get_top_customers(user_id=None):
     """
-    Get top customers by bill count with comprehensive error handling
+    Get top customers by bill count
     """
     try:
         all_bills = []
         kacha_collection = get_kacha_bills_collection()
         pakka_collection = get_pakka_bills_collection()
         
-        # Build user query
         user_query = {}
         if user_id:
             user_query['user_id'] = user_id
         
-        # Get kacha bills
         kacha_bills = list(kacha_collection.find(user_query, {'customerName': 1}))
         all_bills.extend(kacha_bills)
         
-        # Get pakka bills
         pakka_bills = list(pakka_collection.find(user_query, {'customerName': 1}))
         all_bills.extend(pakka_bills)
         
-        # Count customers with error handling
         customer_counts = {}
         for bill in all_bills:
             try:
@@ -160,7 +265,6 @@ def get_top_customers(user_id=None):
                 print(f"Error processing customer name: {e}")
                 continue
         
-        # Get top 5 customers
         sorted_customers = sorted(customer_counts.items(), key=lambda x: x[1], reverse=True)
         top_customers = [{'name': customer, 'count': count} 
                         for customer, count in sorted_customers[:5]]

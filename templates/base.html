@@ -6,40 +6,759 @@
     <title>{% block title %}Nexus Bill Generator{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        
+    
     <script>
         // Make jsPDF available globally
         window.jsPDF = window.jspdf.jsPDF;
     </script>
     
+    <!-- Add this before Alpine.js to initialize enhancedNotifications -->
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'midnight': '#000000',
-                        'twilight': '#121212',
-                        'mystic': '#333333',
-                        'neon': '#ff6600',
-                        'electric': '#ff8533',
-                        'glow': '#ff9900',
-                        'deep-space': '#0a0a0a',
-                        'space-black': '#000000',
-                        'orange-light': '#ff944d',
-                        'orange-dark': '#cc5200',
-                        'gray-light': '#e0e0e0',
-                        'gray-dark': '#666666'
-                    }
-                }
-            }
-        }
+        // Initialize enhancedNotifications before Alpine runs
+        window.enhancedNotifications = {
+            lastUnreadCount: 0,
+            lastNotifications: [],
+            isLoading: false,
+            pollingInterval: null
+        };
     </script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js for interactivity -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
     <style>
+        /* Add Tailwind CSS directly */
+        /*! tailwindcss v3.4.1 | MIT License | https://tailwindcss.com */
+        *,
+        ::after,
+        ::before {
+            box-sizing: border-box;
+            border-width: 0;
+            border-style: solid;
+            border-color: #e5e7eb
+        }
+        ::after,
+        ::before {
+            --tw-content: ''
+        }
+        html {
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -moz-tab-size: 4;
+            tab-size: 4;
+            font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
+        }
+        body {
+            margin: 0;
+            line-height: inherit
+        }
+        hr {
+            height: 0;
+            color: inherit;
+            border-top-width: 1px
+        }
+        abbr:where([title]) {
+            -webkit-text-decoration: underline dotted;
+            text-decoration: underline dotted
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-size: inherit;
+            font-weight: inherit
+        }
+        a {
+            color: inherit;
+            text-decoration: inherit
+        }
+        b,
+        strong {
+            font-weight: bolder
+        }
+        code,
+        kbd,
+        pre,
+        samp {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 1em
+        }
+        small {
+            font-size: 80%
+        }
+        sub,
+        sup {
+            font-size: 75%;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline
+        }
+        sub {
+            bottom: -.25em
+        }
+        sup {
+            top: -.5em
+        }
+        table {
+            text-indent: 0;
+            border-color: inherit;
+            border-collapse: collapse
+        }
+        button,
+        input,
+        optgroup,
+        select,
+        textarea {
+            font-family: inherit;
+            font-size: 100%;
+            font-weight: inherit;
+            line-height: inherit;
+            color: inherit;
+            margin: 0;
+            padding: 0
+        }
+        button,
+        select {
+            text-transform: none
+        }
+        button,
+        [type=button],
+        [type=reset],
+        [type=submit] {
+            -webkit-appearance: button;
+            background-color: transparent;
+            background-image: none
+        }
+        :-moz-focusring {
+            outline: auto
+        }
+        :-moz-ui-invalid {
+            box-shadow: none
+        }
+        progress {
+            vertical-align: baseline
+        }
+        ::-webkit-inner-spin-button,
+        ::-webkit-outer-spin-button {
+            height: auto
+        }
+        [type=search] {
+            -webkit-appearance: textfield;
+            outline-offset: -2px
+        }
+        ::-webkit-search-decoration {
+            -webkit-appearance: none
+        }
+        ::-webkit-file-upload-button {
+            -webkit-appearance: button;
+            font: inherit
+        }
+        summary {
+            display: list-item
+        }
+        blockquote,
+        dd,
+        dl,
+        figure,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        hr,
+        p,
+        pre {
+            margin: 0
+        }
+        fieldset {
+            margin: 0;
+            padding: 0
+        }
+        legend {
+            padding: 0
+        }
+        menu,
+        ol,
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0
+        }
+        textarea {
+            resize: vertical
+        }
+        input::placeholder,
+        textarea::placeholder {
+            opacity: 1;
+            color: #9ca3af
+        }
+        [role=button],
+        button {
+            cursor: pointer
+        }
+        :disabled {
+            cursor: default
+        }
+        audio,
+        canvas,
+        embed,
+        iframe,
+        img,
+        object,
+        svg,
+        video {
+            display: block;
+            vertical-align: middle
+        }
+        img,
+        video {
+            max-width: 100%;
+            height: auto
+        }
+        [hidden] {
+            display: none
+        }
+        
+        /* Custom colors */
+        .bg-midnight {
+            background-color: #000000;
+        }
+        .bg-twilight {
+            background-color: #121212;
+        }
+        .bg-mystic {
+            background-color: #333333;
+        }
+        .text-neon {
+            color: #ff6600;
+        }
+        .text-electric {
+            color: #ff8533;
+        }
+        .text-glow {
+            color: #ff9900;
+        }
+        .bg-space-black {
+            background-color: #000000;
+        }
+        .bg-deep-space {
+            background-color: #0a0a0a;
+        }
+        .text-orange-light {
+            color: #ff944d;
+        }
+        .text-orange-dark {
+            color: #cc5200;
+        }
+        .text-gray-light {
+            color: #e0e0e0;
+        }
+        .text-gray-dark {
+            color: #666666;
+        }
+        .bg-neon {
+            background-color: #ff6600;
+        }
+        .bg-electric {
+            background-color: #ff8533;
+        }
+        
+        /* Layout utilities */
+        .fixed {
+            position: fixed;
+        }
+        .absolute {
+            position: absolute;
+        }
+        .relative {
+            position: relative;
+        }
+        .sticky {
+            position: sticky;
+        }
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+        .top-0 {
+            top: 0;
+        }
+        .right-0 {
+            right: 0;
+        }
+        .bottom-0 {
+            bottom: 0;
+        }
+        .left-0 {
+            left: 0;
+        }
+        .top-4 {
+            top: 1rem;
+        }
+        .left-4 {
+            left: 1rem;
+        }
+        .top-full {
+            top: 100%;
+        }
+        .bottom-full {
+            bottom: 100%;
+        }
+        .-top-1 {
+            top: -0.25rem;
+        }
+        .-right-1 {
+            right: -0.25rem;
+        }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+        .ml-4 {
+            margin-left: 1rem;
+        }
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .flex {
+            display: flex;
+        }
+        .hidden {
+            display: none;
+        }
+        .block {
+            display: block;
+        }
+        .inline-block {
+            display: inline-block;
+        }
+        .inline-flex {
+            display: inline-flex;
+        }
+        .grid {
+            display: grid;
+        }
+        .h-6 {
+            height: 1.5rem;
+        }
+        .h-5 {
+            height: 1.25rem;
+        }
+        .h-4 {
+            height: 1rem;
+        }
+        .h-8 {
+            height: 2rem;
+        }
+        .h-16 {
+            height: 4rem;
+        }
+        .h-10 {
+            height: 2.5rem;
+        }
+        .h-64 {
+            height: 16rem;
+        }
+        .h-96 {
+            height: 24rem;
+        }
+        .h-full {
+            height: 100%;
+        }
+        .h-screen {
+            height: 100vh;
+        }
+        .min-h-screen {
+            min-height: 100vh;
+        }
+        .w-6 {
+            width: 1.5rem;
+        }
+        .w-5 {
+            width: 1.25rem;
+        }
+        .w-4 {
+            width: 1rem;
+        }
+        .w-8 {
+            width: 2rem;
+        }
+        .w-16 {
+            width: 4rem;
+        }
+        .w-10 {
+            width: 2.5rem;
+        }
+        .w-64 {
+            width: 16rem;
+        }
+        .w-80 {
+            width: 20rem;
+        }
+        .w-96 {
+            width: 24rem;
+        }
+        .w-full {
+            width: 100%;
+        }
+        .max-w-sm {
+            max-width: 24rem;
+        }
+        .max-w-md {
+            max-width: 28rem;
+        }
+        .max-w-lg {
+            max-width: 32rem;
+        }
+        .max-w-xl {
+            max-width: 36rem;
+        }
+        .max-w-2xl {
+            max-width: 42rem;
+        }
+        .max-w-4xl {
+            max-width: 56rem;
+        }
+        .max-w-6xl {
+            max-width: 72rem;
+        }
+        .max-w-7xl {
+            max-width: 80rem;
+        }
+        .p-2 {
+            padding: 0.5rem;
+        }
+        .p-4 {
+            padding: 1rem;
+        }
+        .p-6 {
+            padding: 1.5rem;
+        }
+        .p-8 {
+            padding: 2rem;
+        }
+        .px-2 {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        .py-3 {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .pt-4 {
+            padding-top: 1rem;
+        }
+        .pb-4 {
+            padding-bottom: 1rem;
+        }
+        .pl-4 {
+            padding-left: 1rem;
+        }
+        .pr-4 {
+            padding-right: 1rem;
+        }
+        .rounded {
+            border-radius: 0.25rem;
+        }
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+        .rounded-xl {
+            border-radius: 0.75rem;
+        }
+        .rounded-full {
+            border-radius: 9999px;
+        }
+        .border {
+            border-width: 1px;
+        }
+        .border-r {
+            border-right-width: 1px;
+        }
+        .border-b {
+            border-bottom-width: 1px;
+        }
+        .border-t {
+            border-top-width: 1px;
+        }
+        .border-l-4 {
+            border-left-width: 4px;
+        }
+        .border-mystic {
+            border-color: #333333;
+        }
+        .border-neon {
+            border-color: #ff6600;
+        }
+        .border-yellow-500 {
+            border-color: #eab308;
+        }
+        .border-green-500 {
+            border-color: #22c55e;
+        }
+        .bg-black\/80 {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        .bg-mystic\/50 {
+            background-color: rgba(51, 51, 51, 0.5);
+        }
+        .bg-mystic\/30 {
+            background-color: rgba(51, 51, 51, 0.3);
+        }
+        .bg-neon\/20 {
+            background-color: rgba(255, 102, 0, 0.2);
+        }
+        .bg-yellow-500\/20 {
+            background-color: rgba(234, 179, 8, 0.2);
+        }
+        .bg-green-500\/20 {
+            background-color: rgba(34, 197, 94, 0.2);
+        }
+        .bg-blue-500\/10 {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .bg-red-500 {
+            background-color: #ef4444;
+        }
+        .bg-yellow-500 {
+            background-color: #eab308;
+        }
+        .bg-green-500 {
+            background-color: #22c55e;
+        }
+        .bg-gray-900 {
+            background-color: #111827;
+        }
+        .text-white {
+            color: #ffffff;
+        }
+        .text-gray-200 {
+            color: #e5e7eb;
+        }
+        .text-gray-300 {
+            color: #d1d5db;
+        }
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+        .text-gray-500 {
+            color: #6b7280;
+        }
+        .text-yellow-300 {
+            color: #fde047;
+        }
+        .text-green-300 {
+            color: #86efac;
+        }
+        .text-yellow-400 {
+            color: #facc15;
+        }
+        .text-blue-400 {
+            color: #60a5fa;
+        }
+        .text-green-400 {
+            color: #4ade80;
+        }
+        .text-red-400 {
+            color: #f87171;
+        }
+        .text-xs {
+            font-size: 0.75rem;
+            line-height: 1rem;
+        }
+        .text-sm {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        .text-lg {
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+        }
+        .text-xl {
+            font-size: 1.25rem;
+            line-height: 1.75rem;
+        }
+        .font-medium {
+            font-weight: 500;
+        }
+        .font-semibold {
+            font-weight: 600;
+        }
+        .font-bold {
+            font-weight: 700;
+        }
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .shadow-xl {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+        }
+        .backdrop-blur-md {
+            backdrop-filter: blur(8px);
+        }
+        .z-20 {
+            z-index: 20;
+        }
+        .z-30 {
+            z-index: 30;
+        }
+        .z-40 {
+            z-index: 40;
+        }
+        .z-50 {
+            z-index: 50;
+        }
+        .gap-2 {
+            gap: 0.5rem;
+        }
+        .gap-4 {
+            gap: 1rem;
+        }
+        .gap-6 {
+            gap: 1.5rem;
+        }
+        .space-x-2 > * + * {
+            margin-left: 0.5rem;
+        }
+        .space-x-3 > * + * {
+            margin-left: 0.75rem;
+        }
+        .space-x-4 > * + * {
+            margin-left: 1rem;
+        }
+        .space-y-1 > * + * {
+            margin-top: 0.25rem;
+        }
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+        .space-y-3 > * + * {
+            margin-top: 0.75rem;
+        }
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+        .divide-y > * + * {
+            border-top-width: 1px;
+        }
+        .divide-mystic > * + * {
+            border-color: #333333;
+        }
+        .overflow-hidden {
+            overflow: hidden;
+        }
+        .overflow-y-auto {
+            overflow-y: auto;
+        }
+        .transition {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        .transition-all {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        .transition-colors {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        .duration-300 {
+            transition-duration: 300ms;
+        }
+        .ease-in-out {
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .transform {
+            transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+        }
+        .translate-x-full {
+            --tw-translate-x: 100%;
+        }
+        .translate-y-0 {
+            --tw-translate-y: 0px;
+        }
+        .hover\:bg-mystic\/50:hover {
+            background-color: rgba(51, 51, 51, 0.5);
+        }
+        .hover\:bg-mystic\/30:hover {
+            background-color: rgba(51, 51, 51, 0.3);
+        }
+        .hover\:border-neon:hover {
+            border-color: #ff6600;
+        }
+        .hover\:text-white:hover {
+            color: #ffffff;
+        }
+        .hover\:text-neon:hover {
+            color: #ff6600;
+        }
+        .hover\:text-electric:hover {
+            color: #ff8533;
+        }
+        .hover\:shadow-lg:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .focus\:outline-none:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+        .focus\:ring-2:focus {
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        }
+        .focus\:ring-neon:focus {
+            --tw-ring-color: #ff6600;
+        }
+        .focus\:border-transparent:focus {
+            border-color: transparent;
+        }
+        
+        /* Custom classes */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
@@ -55,6 +774,38 @@
         }
         
         @media (min-width: 1024px) {
+            .lg\:ml-64 {
+                margin-left: 16rem;
+            }
+            .lg\:hidden {
+                display: none;
+            }
+            .lg\:flex {
+                display: flex;
+            }
+            .lg\:px-6 {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            .lg\:p-8 {
+                padding: 2rem;
+            }
+            .lg\:col-span-1 {
+                grid-column: span 1 / span 1;
+            }
+            .lg\:col-span-2 {
+                grid-column: span 2 / span 2;
+            }
+            .lg\:col-span-3 {
+                grid-column: span 3 / span 3;
+            }
+            .lg\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .lg\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            
             .sidebar {
                 transition: transform 0.3s ease-in-out;
             }
@@ -65,6 +816,37 @@
             
             .main-content-expanded {
                 margin-left: 0 !important;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        
+        @media (min-width: 640px) {
+            .sm\:p-6 {
+                padding: 1.5rem;
+            }
+            .sm\:pr-6 {
+                padding-right: 1.5rem;
+            }
+            .sm\:space-x-4 > * + * {
+                margin-left: 1rem;
+            }
+            .sm\:flex {
+                display: flex;
+            }
+            .sm\:w-48 {
+                width: 12rem;
+            }
+            .sm\:w-96 {
+                width: 24rem;
             }
         }
         
@@ -116,16 +898,6 @@
         .sidebar {
             transition: transform 0.3s ease-in-out;
         }
-        
-        @media (max-width: 1023px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-        }
 
         .user-info-dropdown {
             opacity: 0;
@@ -150,19 +922,69 @@
             border-color: #ff6600;
             box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
         }
+        
+        /* Animations */
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        /* Search loading animation */
+        input.searching {
+            background-image: linear-gradient(90deg, transparent, rgba(255, 102, 0, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: searchLoading 1.5s infinite;
+        }
+        
+        @keyframes searchLoading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Notification pulse animation */
+        @keyframes notificationPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .notification-pulse {
+            animation: notificationPulse 0.5s ease-in-out;
+        }
+        
+        /* Custom scrollbar */
+        .search-results-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .search-results-scroll::-webkit-scrollbar-track {
+            background: rgba(51, 51, 51, 0.3);
+            border-radius: 3px;
+        }
+        
+        .search-results-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 102, 0, 0.5);
+            border-radius: 3px;
+        }
+        
+        .search-results-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 102, 0, 0.7);
+        }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="text-gray-200">
 
     <div id="sidebar-overlay" class="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm lg:hidden hidden"></div>
 
-    <div class="lg:hidden fixed top-4 left-4 z-50">
-        <button id="mobile-menu-toggle" class="p-2 rounded-lg bg-twilight border border-mystic shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-        </button>
-    </div>
+    <!-- MOBILE MENU BUTTON - Moved inside header for better alignment -->
 
     <div class="sidebar fixed inset-y-0 left-0 z-40 w-64 bg-midnight border-r border-mystic overflow-y-auto">
         <div class="p-6 flex items-center justify-center">
@@ -282,39 +1104,316 @@
     </div>
 
     <div class="lg:ml-64 min-h-screen flex flex-col">
-        <!-- Header Section - Removed user info from here -->
-        <header class="bg-twilight/80 backdrop-blur-md border-b border-mystic py-4 sticky top-0 z-20 pl-16 pr-4 sm:pr-6 lg:px-6">
-            <div class="flex items-center justify-between">
-                <!-- Desktop sidebar toggle and page info -->
-                <div class="flex items-center">
-                    <button id="desktop-sidebar-toggle" class="hidden lg:flex items-center justify-center p-2 rounded-lg bg-mystic hover:bg-opacity-80 transition mr-4">
+        <!-- Header Section -->
+        <header class="bg-twilight/80 backdrop-blur-md border-b border-mystic py-4 sticky top-0 z-20 px-4 sm:px-6 lg:px-6">
+            <div class="flex items-center justify-between w-full">
+                <!-- Left section: Mobile menu button and page info -->
+                <div class="flex items-center flex-1 min-w-0">
+                    <!-- Mobile menu button -->
+                    <button id="mobile-menu-toggle" class="lg:hidden mr-4 p-2 rounded-lg bg-twilight border border-mystic shadow-lg flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Desktop sidebar toggle -->
+                    <button id="desktop-sidebar-toggle" class="hidden lg:flex items-center justify-center p-2 rounded-lg bg-mystic hover:bg-opacity-80 transition mr-4 flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
+                    
+                    <!-- Page title and subtitle -->
                     <div class="min-w-0">
                         <h2 class="text-xl font-semibold glow-text truncate">{% block page_title %}Nexus Bills Dashboard{% endblock %}</h2>
                         <p class="text-sm text-gray-400 mt-1 truncate">{% block page_subtitle %}Manage your bills efficiently{% endblock %}</p>
                     </div>
                 </div>
                 
-                <!-- Search and notifications only - no user info -->
-                <div class="flex items-center space-x-2 sm:space-x-4">
-                    <div class="relative">
-                        <input type="text" placeholder="Search..." class="pl-8 sm:pl-10 pr-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent w-32 sm:w-48 lg:w-64 transition-all">
+                <!-- Right section: Search and notification -->
+                <div class="flex items-center space-x-2 sm:space-x-4 ml-4">
+                    <!-- Search Bar with Enhanced Functionality -->
+                    <div class="relative" x-data="{
+                        isSearchOpen: false, 
+                        searchResults: [], 
+                        isLoading: false, 
+                        query: '', 
+                        searchMessage: '',
+                        async performSearch() {
+                            await window.performSearch.call(this);
+                        }
+                    }">
+                        <input 
+                            type="text" 
+                            placeholder="Search bills..." 
+                            x-model="query"
+                            @input.debounce.500ms="performSearch()"
+                            @focus="isSearchOpen = true"
+                            @keydown.escape="isSearchOpen = false"
+                            class="pl-8 sm:pl-10 pr-4 py-2 bg-midnight border border-mystic rounded-lg focus:outline-none focus:ring-2 focus:ring-neon focus:border-transparent text-white w-32 sm:w-40 lg:w-56 transition-all">
+                        
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-2 sm:left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                         </svg>
+
+                        <!-- Loading Indicator -->
+                        <div x-show="isLoading" class="absolute right-2 top-2.5">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-neon"></div>
+                        </div>
+
+                        <!-- Search Results Dropdown -->
+                        <div 
+                            x-show="isSearchOpen && (query.length > 0 || searchResults.length > 0)"
+                            @click.outside="isSearchOpen = false"
+                            class="absolute top-full right-0 mt-2 bg-space-black border border-mystic rounded-lg shadow-xl z-50 w-64 sm:w-80 max-h-96 overflow-y-auto search-results-scroll"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100">
+                            
+                            <!-- Quick Results -->
+                            <template x-if="searchResults.length > 0">
+                                <div>
+                                    <div class="p-3 border-b border-mystic">
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-neon font-medium" x-text="`${searchResults.length} results found`"></span>
+                                            <a :href="`/search/?q=${encodeURIComponent(query)}`" class="text-electric hover:text-neon transition text-xs">
+                                                View all
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="divide-y divide-mystic">
+                                        <template x-for="result in searchResults.slice(0, 5)" :key="result._id">
+                                            <a 
+                                                :href="result.url"
+                                                class="block p-3 hover:bg-mystic/30 transition cursor-pointer"
+                                                @click="isSearchOpen = false">
+                                                <div class="flex items-start space-x-3">
+                                                    <span 
+                                                        class="inline-flex items-center px-2 py-1 rounded text-xs font-medium mt-1 flex-shrink-0"
+                                                        :class="result.type === 'kacha' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300'"
+                                                        x-text="result.type.charAt(0).toUpperCase() + result.type.slice(1)"></span>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center space-x-2 mb-1">
+                                                            <span class="text-sm font-medium text-white" x-text="result.billNumber"></span>
+                                                            <span class="text-xs text-gray-400" x-text="result.formattedDate || result.billDate"></span>
+                                                        </div>
+                                                        <p class="text-sm text-gray-300 truncate" x-text="result.displayName || result.customerName"></p>
+                                                        <p class="text-xs text-electric mt-1" x-text="result.formattedAmount || `₹${result.totalAmount || 0}`"></p>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- No Results or Empty State -->
+                            <template x-if="query.length > 0 && searchResults.length === 0 && !isLoading">
+                                <div class="p-4 text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p class="text-sm text-gray-400" x-text="searchMessage || `No bills found for \"${query}\"`"></p>
+                                </div>
+                            </template>
+                            
+                            <!-- Search Tips -->
+                            <div class="p-3 border-t border-mystic bg-midnight/50">
+                                <p class="text-xs text-gray-400 mb-1">Search tips:</p>
+                                <div class="flex flex-wrap gap-1">
+                                    <span class="text-xs px-2 py-1 rounded bg-mystic/30 text-gray-300">Customer name</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-mystic/30 text-gray-300">Firm name</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-mystic/30 text-gray-300">Bill date</span>
+                                    <span class="text-xs px-2 py-1 rounded bg-mystic/30 text-gray-300">Bill number</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <button class="relative p-2 rounded-lg bg-mystic hover:bg-opacity-80 transition flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-neon" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                        </svg>
-                        <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                    </button>
+                    <!-- Notifications Dropdown - SIMPLIFIED VERSION -->
+                    <div class="relative" x-data="{
+                        isNotificationsOpen: false,
+                        notifications: [],
+                        unreadCount: 0,
+                        isLoading: false,
+                        async loadNotifications() {
+                            this.isLoading = true;
+                            try {
+                                const response = await fetch('/api/notifications/');
+                                const data = await response.json();
+                                if (data.status === 'success') {
+                                    this.notifications = data.notifications;
+                                    this.unreadCount = data.unread_count;
+                                }
+                            } catch (error) {
+                                console.error('Failed to load notifications:', error);
+                            } finally {
+                                this.isLoading = false;
+                            }
+                        },
+                        async markAsRead(notificationId) {
+                            try {
+                                const response = await fetch(`/api/notifications/${notificationId}/read/`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': window.getCSRFToken(),
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.status === 'success') {
+                                    const notification = this.notifications.find(n => n.id === notificationId);
+                                    if (notification) {
+                                        notification.read = true;
+                                        this.unreadCount = Math.max(0, this.unreadCount - 1);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Failed to mark notification as read:', error);
+                            }
+                        },
+                        async markAllAsRead() {
+                            if (this.unreadCount === 0) return;
+                            if (!confirm(`Are you sure you want to mark all ${this.unreadCount} notifications as read?`)) return;
+                            try {
+                                const response = await fetch('/api/notifications/read-all/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': window.getCSRFToken(),
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.status === 'success') {
+                                    this.notifications.forEach(n => n.read = true);
+                                    this.unreadCount = 0;
+                                    showAppAlert('All notifications marked as read', 'success');
+                                }
+                            } catch (error) {
+                                console.error('Failed to mark all notifications as read:', error);
+                                showAppAlert('Failed to mark notifications as read', 'error');
+                            }
+                        }
+                    }">
+                        <button @click="isNotificationsOpen = !isNotificationsOpen; if (isNotificationsOpen) loadNotifications()" 
+                                class="relative p-2 rounded-lg hover:bg-mystic/50 transition flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 hover:text-neon transition" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                            </svg>
+                            <span x-show="unreadCount > 0" 
+                                  x-text="unreadCount" 
+                                  class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center notification-pulse"
+                                  :class="unreadCount > 9 ? 'text-[10px]' : 'text-xs'"></span>
+                        </button>
 
-                    <!-- Authentication buttons for non-authenticated users (only show when not logged in) -->
+                        <!-- Notifications Dropdown Menu -->
+                        <div 
+                            x-show="isNotificationsOpen"
+                            @click.outside="isNotificationsOpen = false"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100"
+                            class="absolute right-0 top-full mt-2 w-64 sm:w-80 bg-space-black border border-mystic rounded-lg shadow-xl z-50 max-h-96 overflow-hidden">
+                            
+                            <!-- Header -->
+                            <div class="p-4 border-b border-mystic">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold text-neon">Notifications</h3>
+                                    <button @click="markAllAsRead()" 
+                                            class="text-xs text-electric hover:text-neon transition">
+                                        Mark all as read
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div x-show="isLoading" class="p-8 text-center">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-neon mx-auto"></div>
+                                <p class="text-sm text-gray-400 mt-2">Loading notifications...</p>
+                            </div>
+
+                            <!-- Notifications List -->
+                            <div x-show="!isLoading" 
+                                 class="divide-y divide-mystic max-h-64 overflow-y-auto">
+                                <template x-for="notification in notifications" 
+                                          :key="notification.id">
+                                    <div class="p-4 hover:bg-mystic/30 transition"
+                                        :class="!notification.read ? 'bg-blue-500/10' : ''">
+                                        <div class="flex space-x-3">
+                                            <!-- Notification Icon -->
+                                            <div class="flex-shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{
+                                                    'text-blue-400': notification.type === 'info',
+                                                    'text-green-400': notification.type === 'success',
+                                                    'text-yellow-400': notification.type === 'warning',
+                                                    'text-red-400': notification.type === 'error'
+                                                }" viewBox="0 0 20 20" fill="currentColor">
+                                                    <template x-if="notification.type === 'info'">
+                                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                                    </template>
+                                                    <template x-if="notification.type === 'success'">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </template>
+                                                    <template x-if="notification.type === 'warning'">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                    </template>
+                                                    <template x-if="notification.type === 'error'">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                                    </template>
+                                                </svg>
+                                            </div>
+
+                                            <!-- Notification Content -->
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-white" x-text="notification.title"></p>
+                                                <p class="text-sm text-gray-300 mt-1" x-text="notification.message"></p>
+                                                <div class="flex items-center justify-between mt-2">
+                                                    <span class="text-xs text-gray-500" 
+                                                          x-text="formatNotificationTime(notification.timestamp)"></span>
+                                                    <template x-if="notification.action_url">
+                                                        <a :href="notification.action_url" 
+                                                           class="text-xs text-electric hover:text-neon transition"
+                                                           @click="isNotificationsOpen = false">
+                                                            View
+                                                        </a>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <!-- Unread Indicator -->
+                                            <button x-show="!notification.read" 
+                                                    @click="markAsRead(notification.id)"
+                                                    class="flex-shrink-0 text-blue-400 hover:text-blue-300 transition"
+                                                    title="Mark as read">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Empty State -->
+                                <div x-show="notifications.length === 0 && !isLoading" 
+                                     class="p-8 text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    <p class="text-gray-400">No notifications yet</p>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="p-3 border-t border-mystic bg-midnight/50">
+                                <a href="{% url 'core:all_notifications' %}" class="block text-center text-sm text-electric hover:text-neon transition py-1">
+                                    View all notifications
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication buttons for non-authenticated users -->
                     {% if not user.is_authenticated %}
                     <div class="hidden sm:flex items-center space-x-2">
                         <a href="{% url 'accounts:login' %}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">Sign in</a>
@@ -333,181 +1432,57 @@
         </main>
     </div>
 
+    <!-- Django data for JavaScript -->
+    <script>
+        window.djangoData = {
+            user: {
+                is_authenticated: {% if user.is_authenticated %}true{% else %}false{% endif %},
+                username: "{% if user.is_authenticated %}{{ user.username }}{% endif %}",
+                email: "{% if user.is_authenticated %}{{ user.email }}{% endif %}",
+                initials: "{% if user.is_authenticated %}{{ user.username|slice:':2'|upper }}{% endif %}"
+            },
+            messages: [
+                {% for message in messages %}
+                {
+                    text: "{{ message|escapejs }}",
+                    tags: "{{ message.tags }}",
+                    type: "{{ message.tags }}"
+                },
+                {% endfor %}
+            ],
+            current_path: "{{ request.path }}"
+        };
+        
+        // Helper function for notification time formatting
+        window.formatNotificationTime = function(timestamp) {
+            try {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                
+                return date.toLocaleDateString('en-IN', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: diffDays < 365 ? undefined : 'numeric'
+                });
+            } catch (e) {
+                return 'Recently';
+            }
+        };
+    </script>
+
     <!-- Load JavaScript files -->
     <script src="{% static 'js/pdf-utils.js' %}"></script>
     <script src="{% static 'js/app.js' %}"></script>
     
-    <script>
-    // CSRF token helper function
-    function getCSRFToken() {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        return csrfToken ? csrfToken.value : '';
-    }
-    // Fallback function to use user information
-    function useUserInfoAsFallback() {
-        const businessNameElements = document.querySelectorAll('.business-name');
-        const businessEmailElements = document.querySelectorAll('.business-email');
-        const businessInitialsElements = document.querySelectorAll('.business-initials');
-        
-        businessNameElements.forEach(el => {
-            if (el.textContent === 'Your Business') {
-                el.textContent = '{{ user.username }}';
-            }
-        });
-        
-        businessEmailElements.forEach(el => {
-            if (el.textContent === 'business@example.com') {
-                el.textContent = '{{ user.email|default:"Update your profile" }}';
-            }
-        });
-        
-        businessInitialsElements.forEach(el => {
-            if (el.textContent === 'KR' || el.textContent === 'NB') {
-                el.textContent = '{{ user.username|slice:":2"|upper }}';
-            }
-        });
-    }
-    // Load company information for sidebar
-    async function loadCompanyInfo() {
-        try {
-            const response = await fetch('/api/get-company-details/');
-            const result = await response.json();
-            
-            if (response.ok && result.status === 'success') {
-                const company = result.company;
-                
-                // Update sidebar with company name if available
-                const businessNameElements = document.querySelectorAll('.business-name');
-                const businessEmailElements = document.querySelectorAll('.business-email');
-                const businessInitialsElements = document.querySelectorAll('.business-initials');
-                
-                if (company.companyName && company.companyName.trim() !== '' && company.companyName !== 'Your Business') {
-                    businessNameElements.forEach(el => {
-                        el.textContent = company.companyName;
-                    });
-                    
-                    // Update initials with company name
-                    const initials = company.companyName
-                        .split(' ')
-                        .map(word => word.charAt(0))
-                        .join('')
-                        .toUpperCase()
-                        .substring(0, 2);
-                    
-                    businessInitialsElements.forEach(el => {
-                        el.textContent = initials;
-                    });
-                }
-                
-                if (company.email && company.email.trim() !== '' && company.email !== 'business@example.com') {
-                    businessEmailElements.forEach(el => {
-                        el.textContent = company.email;
-                    });
-                }
-
-                // Update page title with company name if it's the default
-                const pageTitle = document.querySelector('.glow-text');
-                if (pageTitle && company.companyName && company.companyName.trim() !== '') {
-                    if (pageTitle.textContent.includes('Nexus Bills Dashboard') || pageTitle.textContent.includes('Page name')) {
-                        pageTitle.textContent = `${company.companyName} Dashboard`;
-                    }
-                }
-                
-                // Update document title
-                if (company.companyName && company.companyName.trim() !== '' && !document.title.includes(company.companyName)) {
-                    document.title = `${company.companyName} - Nexus Bills`;
-                }
-
-                console.log('Company info loaded successfully:', company);
-            } else {
-                console.log('No company details found, using user information');
-                // Use user information as fallback
-                useUserInfoAsFallback();
-            }
-        } catch (error) {
-            console.error('Error loading company info:', error);
-            // Use user information as fallback
-            useUserInfoAsFallback();
-        }
-    }
-
-    // Initialize company info when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        {% if user.is_authenticated %}
-        loadCompanyInfo();
-        {% else %}
-        useUserInfoAsFallback();
-        {% endif %}
-        // Only load company info if user is authenticated
-        {% if user.is_authenticated %}
-        loadCompanyInfo();
-        {% endif %}
-        
-        // Update the sidebar user info with actual user data immediately
-        {% if user.is_authenticated %}
-        const businessNameElements = document.querySelectorAll('.business-name');
-        const businessEmailElements = document.querySelectorAll('.business-email');
-        const businessInitialsElements = document.querySelectorAll('.business-initials');
-        
-        // Set initial values from Django template
-        businessNameElements.forEach(el => {
-            if (el.textContent === 'Your Business') {
-                el.textContent = '{{ user.username }}';
-            }
-        });
-        
-        businessEmailElements.forEach(el => {
-            if (el.textContent === 'business@example.com') {
-                el.textContent = '{{ user.email }}';
-            }
-        });
-        
-        businessInitialsElements.forEach(el => {
-            if (el.textContent === 'KR' || el.textContent === 'NB') {
-                el.textContent = '{{ user.username|slice:":2"|upper }}';
-            }
-        });
-        {% endif %}
-    });
-    </script>
-        {% block scripts %}{% endblock scripts %}
-        <script>
-        // Handle Django messages and display them as alerts
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if we're on login page and handle messages appropriately
-            const isLoginPage = window.location.pathname.includes('/accounts/login');
-            const isDashboardPage = window.location.pathname === '/' || 
-                                window.location.pathname === '/dashboard/' || 
-                                window.location.pathname.includes('/dashboard');
-            
-            // Convert Django messages to JavaScript alerts
-            {% if messages %}
-                {% for message in messages %}
-                    {% if message.tags == 'success' %}
-                        {% if isDashboardPage and 'Welcome back' in message.message %}
-                            // Show welcome message only on dashboard
-                            showAppAlert('{{ message }}', 'success');
-                        {% elif isLoginPage and 'logged out' in message.message %}
-                            // Show logout message only on login page
-                            showAppAlert('{{ message }}', 'success');
-                        {% elif not 'Welcome back' in message.message and not 'logged out' in message.message %}
-                            // Show other messages normally
-                            showAppAlert('{{ message }}', '{{ message.tags }}');
-                        {% endif %}
-                    {% else %}
-                        showAppAlert('{{ message }}', '{{ message.tags }}');
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-            
-            // Clear the welcome shown flag when leaving dashboard
-            window.addEventListener('beforeunload', function() {
-                if (!isDashboardPage) {
-                    // Clear session storage when navigating away from dashboard
-                    sessionStorage.removeItem('welcomeShown');
-                }
-            });
-        });
-    </script>
+    {% block scripts %}{% endblock scripts %}
 </body>
 </html>

@@ -4,7 +4,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- SETUP ---
     const billDateEl = document.getElementById('billDate');
     if (billDateEl) {
-        billDateEl.value = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        billDateEl.value = `${yyyy}-${mm}-${dd}`;
     }
     addProductRow();
     
@@ -12,10 +16,15 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCompanyDetails();
     
     // --- EVENT LISTENERS ---
-    document.getElementById('addProduct').addEventListener('click', addProductRow);
-    document.getElementById('resetBill').addEventListener('click', resetBill);
-    document.getElementById('downloadPakkaBill').addEventListener('click', downloadPakkaBill);
-    document.getElementById('generatePakkaBill').addEventListener('click', generatePakkaBill);
+    const addProductBtn = document.getElementById('addProduct');
+    const resetBillBtn = document.getElementById('resetBill');
+    const downloadPakkaBillBtn = document.getElementById('downloadPakkaBill');
+    const generatePakkaBillBtn = document.getElementById('generatePakkaBill');
+
+    if(addProductBtn) addProductBtn.addEventListener('click', addProductRow);
+    if(resetBillBtn) resetBillBtn.addEventListener('click', resetBill);
+    if(downloadPakkaBillBtn) downloadPakkaBillBtn.addEventListener('click', downloadPakkaBill);
+    if(generatePakkaBillBtn) generatePakkaBillBtn.addEventListener('click', generatePakkaBill);
 
     // --- CORE FUNCTIONS ---
 
@@ -70,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function calculateRowAmount(event) {
+        if (!event || !event.target) return;
         const row = event.target.closest('.product-row');
         if (!row) return;
         
@@ -81,7 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const quantity = parseFloat(quantityInput.value) || 0;
         const rate = parseFloat(rateInput.value) || 0;
-        amountCell.textContent = `₹${(quantity * rate).toFixed(2)}`;
+        const amount = quantity * rate;
+        amountCell.textContent = `₹${amount.toFixed(2)}`;
         calculateTotal();
     }
     
@@ -99,20 +110,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function resetBill() {
         if (confirm('Are you sure you want to reset the bill? All customer data will be lost.')) {
-            // Reset customer information only (seller info stays auto-filled)
             document.getElementById('customerName').value = '';
+            document.getElementById('customerFirmName').value = '';  // NEW
             document.getElementById('customerAddress').value = '';
             
-            // Reset products
             const productsBody = document.getElementById('productsBody');
             if (productsBody) {
                 productsBody.innerHTML = '';
             }
             
-            // Reset terms
             document.getElementById('terms').value = '';
             
-            // Add initial product row and reset total
             addProductRow();
             calculateTotal();
         }
@@ -128,11 +136,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && result.status === 'success') {
                 const company = result.company;
                 
-                // Update the auto-filled seller information display
                 document.getElementById('autoFirmName').textContent = company.companyName || 'Not set';
                 document.getElementById('autoGstNumber').textContent = company.gstNumber || 'Not set';
                 
-                // Build address string
                 const addressParts = [];
                 if (company.address) addressParts.push(company.address);
                 if (company.city || company.state || company.pincode) {
@@ -145,62 +151,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('autoSellerAddress').textContent = 
                     addressParts.join('\n') || 'Not set';
                 
-                console.log('Company details loaded successfully for pakka bill');
             } else {
-                // Company details not set up yet - show error message
                 document.getElementById('autoFirmName').textContent = 'Not set up';
                 document.getElementById('autoGstNumber').textContent = 'Not set up';
                 document.getElementById('autoSellerAddress').textContent = 'Not set up';
-                
                 showAppAlert('Company details not found. Please complete onboarding first.', 'error');
-                console.error('Company details not found for pakka bill');
             }
         } catch (error) {
             console.error('Error loading company details:', error);
             document.getElementById('autoFirmName').textContent = 'Error loading';
             document.getElementById('autoGstNumber').textContent = 'Error loading';
             document.getElementById('autoSellerAddress').textContent = 'Error loading';
-            
-            showAppAlert('Unable to load company details. Please complete onboarding first.', 'error');
-        }
-    }
-    
-    // --- DATA SAVING FUNCTIONS ---
-
-    function generatePakkaBill() {
-        const billData = collectBillData();
-        if (validateBill(billData)) {
-            billData.status = 'pakka';
-            sendDataToServer(billData);
         }
     }
 
-    function downloadPakkaBill() {
-        const billData = collectBillData();
-        if (validateBill(billData)) {
-            // Generate a temporary bill number for preview
-            billData.billNumber = `PAKKA-PREVIEW-${Date.now().toString().substring(8)}`;
-            
-            // Add company details for the PDF
-            addCompanyDetailsToBillData(billData).then(() => {
-                downloadPakkaBillPDF(billData);
-            }).catch(error => {
-                showAppAlert('Error preparing bill data: ' + error.message, 'error');
-            });
-        }
-    }
-
-    async function addCompanyDetailsToBillData(billData) {
+    async function enrichBillDataWithCompanyDetails(billData) {
         try {
             const response = await fetch('/api/get-company-details/');
             const result = await response.json();
             
             if (response.ok && result.status === 'success') {
                 const company = result.company;
+                billData.companyDetails = company;
+                billData.yourFirmName = company.companyName;
                 billData.firmName = company.companyName;
                 billData.gstNumber = company.gstNumber;
                 
-                // Build seller address from company details
+                // Build seller address
                 const addressParts = [];
                 if (company.address) addressParts.push(company.address);
                 if (company.city || company.state || company.pincode) {
@@ -211,21 +188,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 billData.sellerAddress = addressParts.join('\n');
                 
-                // Add additional company details if available
                 if (company.phone) billData.sellerPhone = company.phone;
                 if (company.email) billData.sellerEmail = company.email;
                 if (company.bankName) billData.bankName = company.bankName;
                 if (company.accountNumber) billData.accountNumber = company.accountNumber;
                 if (company.ifscCode) billData.ifscCode = company.ifscCode;
+                
+                // Add customer firm name if available for PDF
+                if (billData.customerFirmName) {
+                    billData.customerCompanyName = billData.customerFirmName;
+                }
             } else {
-                throw new Error('Company details not found');
+                console.warn('Company details not found for PDF generation');
             }
         } catch (error) {
-            console.error('Error loading company details:', error);
-            // Use placeholder values if company details not available
-            billData.firmName = billData.firmName || 'Your Company Name';
-            billData.gstNumber = billData.gstNumber || 'GSTIN Not Available';
-            billData.sellerAddress = billData.sellerAddress || 'Company Address Not Set';
+            console.error('Error enriching bill data with company details:', error);
+        }
+        return billData;
+    }
+
+    // --- DATA SAVING FUNCTIONS ---
+
+    function generatePakkaBill() {
+        const billData = collectBillData();
+        if (validateBill(billData)) {
+            sendDataToServer(billData);
+        }
+    }
+
+    async function downloadPakkaBill() {
+        const billData = collectBillData();
+        if (validateBill(billData)) {
+            billData.billNumber = `PAKKA-PREVIEW-${Date.now().toString().substring(8)}`;
+            // Enrich with company details
+            const enrichedBillData = await enrichBillDataWithCompanyDetails(billData);
+            downloadPakkaBillPDF(enrichedBillData);
         }
     }
 
@@ -233,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             showAppAlert('Generating PDF...', 'info');
             
-            // Check if PDFGenerator is available
             if (!window.PDFGenerator || typeof window.PDFGenerator.generatePakkaBillPDF !== 'function') {
                 throw new Error('PDF generator is not available. Please refresh the page and try again.');
             }
@@ -247,10 +243,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function sendDataToServer(billData) {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfTokenEl ? csrfTokenEl.value : '';
+        
+        // Get the create URL from the hidden div
+        const urlsDiv = document.getElementById('urls');
+        const createUrl = urlsDiv ? urlsDiv.dataset.createUrl : '/pakka-bills/api/create/';
         
         try {
-            // First get company details to include in the bill
             const companyResponse = await fetch('/api/get-company-details/');
             const companyResult = await companyResponse.json();
             
@@ -258,30 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Company details not found. Please complete onboarding first.');
             }
             
-            // Merge company details with bill data
-            const company = companyResult.company;
-            billData.firmName = company.companyName;
-            billData.gstNumber = company.gstNumber;
-            
-            // Build seller address from company details
-            const addressParts = [];
-            if (company.address) addressParts.push(company.address);
-            if (company.city || company.state || company.pincode) {
-                const cityStatePincode = [company.city, company.state, company.pincode]
-                    .filter(part => part)
-                    .join(', ');
-                if (cityStatePincode) addressParts.push(cityStatePincode);
-            }
-            billData.sellerAddress = addressParts.join('\n');
-            
-            // Add additional company details if available
-            if (company.phone) billData.sellerPhone = company.phone;
-            if (company.email) billData.sellerEmail = company.email;
-            if (company.bankName) billData.bankName = company.bankName;
-            if (company.accountNumber) billData.accountNumber = company.accountNumber;
-            if (company.ifscCode) billData.ifscCode = company.ifscCode;
-            
-            const response = await fetch('/api/save/', {
+            const response = await fetch(createUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -292,14 +269,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const result = await response.json();
             
-            if (response.ok) {
+            if (response.ok && result.status === 'success') {
                 let successMessage = result.message;
                 if (result.bill_number) {
                     successMessage += ` Bill Number: ${result.bill_number}`;
                 }
                 showAppAlert(successMessage, 'success');
                 
-                // Redirect to pakka bills list after short delay
                 setTimeout(() => {
                     window.location.href = '/pakka-bills/';
                 }, 1500);
@@ -338,17 +314,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return {
             billDate: document.getElementById('billDate')?.value || '',
             customerName: document.getElementById('customerName')?.value || '',
+            customerFirmName: document.getElementById('customerFirmName')?.value || '',  // NEW FIELD
             customerAddress: document.getElementById('customerAddress')?.value || '',
             products: products,
             totalAmount: parseFloat(document.getElementById('totalAmount')?.textContent.replace('₹', '') || 0),
             terms: document.getElementById('terms')?.value || '',
             billType: 'pakka'
-            // Note: firmName, gstNumber, sellerAddress will be added from company details
         };
     }
     
     function validateBill(billData) {
-        // Validate customer information
         if (!billData.customerName.trim()) {
             showAppAlert('Please enter customer name.', 'error');
             document.getElementById('customerName').focus();
@@ -361,7 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        // Validate products
         if (billData.products.length === 0) {
             showAppAlert('Please add at least one product.', 'error');
             return false;
@@ -370,13 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const product = billData.products[i];
             if (!product.name.trim()) {
                 showAppAlert(`Please enter a name for product ${i + 1}.`, 'error');
-                const productRows = document.querySelectorAll('.product-row');
-                if (productRows[i]) {
-                    const productNameInput = productRows[i].querySelector('.product-name');
-                    if (productNameInput) {
-                        productNameInput.focus();
-                    }
-                }
                 return false;
             }
             if (product.quantity <= 0) {
@@ -391,38 +358,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
-    // A simple replacement for alert()
     function showAppAlert(message, type = 'success') {
         console.log(`ALERT (${type}):`, message);
         
-        // Use the global showAppAlert function if available, otherwise use basic alert
+        // Try to use existing alert system
         if (window.showAppAlert) {
             window.showAppAlert(message, type);
-        } else {
-            // Fallback to basic alert with color coding
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `p-4 mb-4 rounded-lg ${
-                type === 'success' ? 'bg-green-900 text-green-200 border border-green-700' :
-                type === 'error' ? 'bg-red-900 text-red-200 border border-red-700' :
-                type === 'warning' ? 'bg-yellow-900 text-yellow-200 border border-yellow-700' :
-                'bg-blue-900 text-blue-200 border border-blue-700'
-            }`;
-            alertDiv.textContent = message;
-            
-            // Insert at the top of the content
-            const content = document.querySelector('main');
-            if (content) {
-                content.insertBefore(alertDiv, content.firstChild);
-                
-                // Auto remove after 5 seconds
-                setTimeout(() => {
-                    if (alertDiv.parentNode) {
-                        alertDiv.remove();
-                    }
-                }, 5000);
-            } else {
-                alert(message);
-            }
+            return;
         }
+        
+        // Create a simple alert if no alert system exists
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `fixed top-4 right-4 z-50 p-4 mb-4 rounded-lg ${
+            type === 'success' ? 'bg-green-900 text-green-200 border border-green-700' :
+            type === 'error' ? 'bg-red-900 text-red-200 border border-red-700' :
+            type === 'warning' ? 'bg-yellow-900 text-yellow-200 border border-yellow-700' :
+            'bg-blue-900 text-blue-200 border border-blue-700'
+        }`;
+        alertDiv.innerHTML = `
+            <div class="flex items-center">
+                <span class="mr-2">${type === 'success' ? '✓' : type === 'error' ? '✗' : '⚠'}</span>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
 });
